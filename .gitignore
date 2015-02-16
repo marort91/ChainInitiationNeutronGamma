@@ -4,3 +4,5 @@ mcnp_random.f90
 *.mod
 *.out
 *.txt
+*.pdf
+*.png
