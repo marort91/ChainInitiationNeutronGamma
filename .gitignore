@@ -3,3 +3,4 @@ mcnp_random.f90
 *.bak
 *.mod
 *.out
+*.txt
