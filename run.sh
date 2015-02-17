@@ -4,15 +4,15 @@
 rm ntrnlife.txt
 rm FissionNuTwo
 
-gfortran -o FissionNuTwo mcnp_random.f90 meeting212.f90
+gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-chain=5e4
+chain=2e4
 
 for i in $(seq 1 $chain);
 do
-	./FissionNuTwo
+	./NtrnGammaInit.out
 	echo $i
 	cat lifedata >> ntrnlife.txt
 	rm lifedata

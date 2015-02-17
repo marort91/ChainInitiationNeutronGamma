@@ -5,7 +5,7 @@ PROGRAM dataread
 	INTEGER :: i, j, k
 	INTEGER, PARAMETER :: N = 1000
 	INTEGER, PARAMETER :: lens = 50
-	INTEGER, PARAMETER :: chains = 5e4
+	INTEGER, PARAMETER :: chains = 2e4
 
 	REAL, DIMENSION(lens*chains,2) :: arr
 	REAL, DIMENSION(N+1) :: time

@@ -6,12 +6,12 @@ data = load('fortran.txt');
 
 dim = size(data);
 
-chains = 5e4;
-lf = 0.0;
+chains = 2e4;
+lf = 0.3;
 lc = 1 - lf;
 
-N = 0:1:2;
-N = 1
+N = 0:1:7;
+%N = 1;
 %N = 1;
 
 for k = 1:length(N)
@@ -65,6 +65,6 @@ legend('Monte Carlo');
 
 %strsave = 
 
-%export_fig(sprintf('P%i_sigf%.2f_sigc%.2f_%ichains',N(k),lf,lc,chains), '-pdf', '-m2.5', '-nocrop');
+export_fig(sprintf('P%i_sigf%.2f_sigc%.2f_%ichains',N(k),lf,lc,chains), '-pdf', '-m2.5', '-nocrop');
 
 end

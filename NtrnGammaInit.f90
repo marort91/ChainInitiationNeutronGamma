@@ -1,6 +1,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!																											         !!
-!! 	neutronchains.f90																						         !!
+!! 	NtrnGammaInit.f90																						         !!
 !! 	Description: Neutron and photon stochastic population tracking										             !!
 !! 	Assumptions: Zero-dimension, one speed neutron and gamma ray creation									         !!
 !! 	Created by: Mario I. Ortega																				         !!
@@ -52,7 +52,7 @@
 !!																													 !!
 !! 02/16/2015																										 !!
 !! - Fixed neutron and gamma multiplicity functions. Verified no fission possible case. No more segmentation 		 !!
-!!   faults are fixing indexing. Nubar, mubar, and cumulative distribution functions implemented correctly!			 !!
+!!   faults after fixing indexing. Nubar, mubar, and cumulative distribution functions implemented correctly!		 !!
 !!																													 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -67,7 +67,7 @@ END MODULE mcnp_params
 
 MODULE mat_params
 
-	real, parameter :: lfission = 0.0
+	real, parameter :: lfission = 0.3
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
@@ -216,12 +216,12 @@ FUNCTION NtrnMult(rnmN)
 
 	IMPLICIT NONE
 
-	integer, parameter :: NtrnMax = 7
+	integer, parameter :: NtrnMax = 8
 	integer :: i
 
 	real(R8) :: rnm, rnmN
-	real(R8) :: sum = 0
-	real(R8) :: nubar = 0
+	real :: sum = 0
+	real :: nubar = 0
 	real, dimension( NtrnMax ) :: ProbNu
 	real, dimension( NtrnMax ) :: CumNu = 0
 	integer(I8) :: NtrnMult
@@ -229,11 +229,13 @@ FUNCTION NtrnMult(rnmN)
 	call system_clock( seed )
 	call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
 
-	ProbNu = (/ 0.2, 0.3, 0.2, 0.1, 0.1, 0.05, 0.05 /)
+	!ProbNu = (/ 0.2, 0.3, 0.2, 0.1, 0.1, 0.05, 0.05 /)
 
-	!open( unit = 10, file = "ntrnPNmult" )
+	open( unit = 10, file = "ntrn.mult" )
 
-	!read( unit = 10, FMT = * ) ProbNu
+	read( unit = 10, FMT = * ) ProbNu
+
+	close( unit = 10 )
 
 	do i=1,NtrnMax
 
@@ -242,15 +244,15 @@ FUNCTION NtrnMult(rnmN)
 
 	enddo
 
-	!print *, CumNu
+	!print *, "CumNu: ", CumNu
 
 	do i=1,NtrnMax
 
-		nubar = nubar + ProbNu(i)*i
+		nubar = nubar + ProbNu(i)*(i-1)
 
 	enddo
 
-	!print *, nubar
+	print *, nubar
 
 	!print *, rnm
 
@@ -290,7 +292,7 @@ FUNCTION GammaMult()
 
 	IMPLICIT NONE
 
-	integer, parameter :: GammaMax = 7
+	integer, parameter :: GammaMax = 8
 	integer :: i
 
 	real(R8) :: rnm
@@ -303,11 +305,13 @@ FUNCTION GammaMult()
 	!call system_clock( seed )
 	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
 
-	ProbMu = (/ 0.2, 0.3, 0.2, 0.1, 0.1, 0.05, 0.05 /)
+	!ProbMu = (/ 0.2, 0.3, 0.2, 0.1, 0.1, 0.05, 0.05 /)
 
-	!open( unit = 11, file = "gammaPGmult" )
+	open( unit = 11, file = "gamma.mult" )
 
-	!read( unit = 11, FMT = * ) ProbMu
+	read( unit = 11, FMT = * ) ProbMu
+
+	close( unit = 11 )
 
 	do i=1,GammaMax
 
@@ -316,9 +320,11 @@ FUNCTION GammaMult()
 
 	enddo
 
+	!print *, "CumMu: ", CumMu
+
 	do i=1,GammaMax
 
-		mubar = mubar + ProbMu(i)*i
+		mubar = mubar + ProbMu(i)*(i-1)
 
 	enddo
 
