@@ -73,14 +73,14 @@ MODULE mat_params
 
     real, parameter :: Pfiss = lfission / ltot
     real, parameter :: Pcap = lcapture / ltot
-    integer :: nu
+    integer :: nu, mu
 
     !Binary Fission Assumption
     !integer, parameter :: nu = 2
 
 END MODULE mat_params
 
-PROGRAM neutronchain
+PROGRAM neutrongammachain
 
 	use mcnp_random
 	use mcnp_params
@@ -91,41 +91,53 @@ PROGRAM neutronchain
 	real(R8) :: dt, rnmN, rnmG
 	real(R8) :: t0, tf, TimeInteract
 	integer(I8) :: i, j, NtrnMult, GammaMult
-	integer :: idx
+	integer :: nidx, gidx
 
 	integer, parameter :: branchlens = 50
-	real(R8), dimension(1,2,branchlens) :: time = 0
+	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
+	real(R8), dimension(1,branchlens*2) :: gammatime = 0
 
 	!Initialize MCNP Random Number Generator
 	call system_clock(seed)
 	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 
-	open( unit = 1, file = "lifedata")
+	open( unit = 1, file = "ntrnlifedata" )
+	open( unit = 2, file = "gammalifedata" )
 
-	!Initialize index
-	idx = 1
+	!Initialize neutron and gamma indices
+	nidx = 1
+	gidx = 1
 
 	!Birth time of first neutron ( Random source to be implemented )
 	t0 = 0
 
 	do i=1,branchlens
 
-		if ( ( time(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
+		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		
-		time(1,2,i) = time(1,1,i) + TimeInteract(time(1,1,i))
+		ntrntime(1,2,i) = ntrntime(1,1,i) + TimeInteract(ntrntime(1,1,i))
 
 		if (rang() .le. Pfiss) then
 
 			rnmN = rang()
+			rnmG = rang()
 
 			nu = NtrnMult(rnmN)
+			mu = GammaMult(rnmG)
 
 			!print *, rnmN
 			!print *
-			!print *, "Time of Fission: ", time(1,2,i)
+			print *, "Time of Fission: ", ntrntime(1,2,i)
 			!print *
-			!print *, "Fission neutrons created: ", nu
+			print *, "Fission neutrons created: ", nu
+			print *, "Gammas generated:         ", mu
 			!print *, nubar
+
+			ntrntime(1,1,nidx+1:nidx+nu) = ntrntime(1,2,i)
+			gammatime(1,gidx:gidx+mu-1) = ntrntime(1,2,i)
+			
+			nidx = nidx + nu
+			gidx = gidx + mu
 
 			if ( nu .eq. 0 ) then
 
@@ -133,25 +145,24 @@ PROGRAM neutronchain
 
 			else
 
-			time(1,1,idx+1:idx+nu) = time(1,2,i)
-			
-			idx = idx + nu
+			print *, "Gamma index: 		   ", gidx
+			print *
 
 			endif
 			!print *, idx
 
 		endif
 
-		if ( idx + 1 .gt. branchlens) exit
+		if ( nidx + 1 .gt. branchlens) exit
 
 	enddo
 
 	do i=1,branchlens
 
-		if ( (time(1,1,i) .ne. 0) .and. (time(1,2,i) .eq. 0) ) then
+		if ( (ntrntime(1,1,i) .ne. 0) .and. (ntrntime(1,2,i) .eq. 0) ) then
 
 			!time(1,2,i) = time(1,1,i) - (1/ltot)*log( rang() )
-			time(1,2,i) = time(1,1,i) + TimeInteract(time(1,1,i))
+			ntrntime(1,2,i) = ntrntime(1,1,i) + TimeInteract(ntrntime(1,1,i))
 
 		endif
 
@@ -159,11 +170,17 @@ PROGRAM neutronchain
 
 	do i=1,branchlens
 		
-		write( 1, * ), time(1,1,i), time(1,2,i)
+		write( 1, * ), ntrntime(1,1,i), ntrntime(1,2,i)
 
 	enddo
 
-END PROGRAM neutronchain
+	do i=1,2*branchlens
+
+		write( 2, * ), gammatime(1,i)
+
+	enddo
+
+END PROGRAM neutrongammachain
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -252,7 +269,7 @@ FUNCTION NtrnMult(rnmN)
 
 	enddo
 
-	print *, nubar
+	!print *, nubar
 
 	!print *, rnm
 
@@ -285,7 +302,7 @@ END FUNCTION NtrnMult
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-FUNCTION GammaMult()
+FUNCTION GammaMult(rnm)
 
 	use mcnp_random
 	use mcnp_params

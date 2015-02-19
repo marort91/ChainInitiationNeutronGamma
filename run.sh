@@ -1,26 +1,32 @@
 #!/bin/bash
 
 # rm test.txt
+
+clear
+
 rm ntrnlife.txt
-rm FissionNuTwo
+rm gammalife.txt
+rm NtrnGammaInit.out
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-chain=2e4
+chain=1e3
 
 for i in $(seq 1 $chain);
 do
 	./NtrnGammaInit.out
 	echo $i
-	cat lifedata >> ntrnlife.txt
-	rm lifedata
+	cat ntrnlifedata >> ntrnlife.txt
+	cat gammalifedata >> gammalife.txt
+	rm ntrnlifedata
+	rm gammalifedata
 done
 
-sed -i.bak "8s/.*/	INTEGER, PARAMETER :: chains = $chain/" dataread.f90
+sed -i.bak "9s/.*/	INTEGER, PARAMETER :: chains = $chain/" ntrngammadataread.f90
 
-gfortran -o datread dataread.f90
+gfortran -o datread ntrngammadataread.f90
 
 ./datread
 
@@ -28,4 +34,4 @@ rm datread
 rm mat_params.mod
 rm mcnp_params.mod
 rm mcnp_random.mod
-rm dataread.f90.bak
+#rm ntrngammadataread.f90.bak

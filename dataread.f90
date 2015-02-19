@@ -1,29 +1,28 @@
-PROGRAM dataread
+PROGRAM ntrndataread
 
 	IMPLICIT NONE
 
 	INTEGER :: i, j, k
 	INTEGER, PARAMETER :: N = 1000
 	INTEGER, PARAMETER :: lens = 50
-	INTEGER, PARAMETER :: chains = 2e4
+	INTEGER, PARAMETER :: chains = 1e3
 
-	REAL, DIMENSION(lens*chains,2) :: arr
+	REAL, DIMENSION(lens*chains,2) :: ntrnarr
 	REAL, DIMENSION(N+1) :: time
-	INTEGER, DIMENSION(chains,N+1) :: tal = 0
+	INTEGER, DIMENSION(chains,N+1) :: ntrntal = 0
 
 	REAL :: t0, tf, dt
 
-	!open( unit = 1, file = "test.txt")
-	!open( unit = 1, file = "mario.txt")
-    !open( unit = 1, file = "cut")
-    open( unit = 1, file = "ntrnlife.txt")
-    !open( unit = 1, file = "lifedata" )
+	! Reading neutron and gamma lifetime text files
+	open( unit = 1, file = "ntrnlife.txt")
 
 	do i=1,lens*chains
 
-		read( unit = 1, FMT =  * ) arr(i,:)
+		read( unit = 1, FMT =  * ) ntrnarr(i,:)
 
 	enddo
+
+	!Time Tally Bins
 
 	t0 = 0
 	tf = 20
@@ -36,21 +35,23 @@ PROGRAM dataread
 
 	enddo
 
+	!Tallying of neutrons
+
 	do k = 1, chains
 
 		do i = 1+(k-1)*lens, lens*k
 
 			do j = 1, N+1
 
-				if ( arr(i,1) .eq. arr(i,2) ) then
+				if ( ntrnarr(i,1) .eq. ntrnarr(i,2) ) then
 
 					cycle
 
 				endif
 
-				if ( (arr(i,1) .le. time(j) ) .and. ( arr(i,2) .gt. time(j) ) ) then
+				if ( ( ntrnarr(i,1) .le. time(j) ) .and. ( ntrnarr(i,2) .gt. time(j) ) ) then
 
-					tal(k,j) = tal(k,j) + 1
+					ntrntal(k,j) = ntrntal(k,j) + 1
 
 				endif
 
@@ -60,23 +61,18 @@ PROGRAM dataread
 
 	enddo
 
-	do j = 1,N+1
-
-		!print *, tal(j)
-
-	enddo
-
+	
 	!open( unit = 2, file = "data.txt")
-	open ( unit = 2, file = "fortran.txt")
+	open ( unit = 2, file = "ntrnanalysis.txt")
 
 	!print *, tal
 
 	do k =1, chains
 
-		write(2,*), tal(k,:)
+		write(2,*), ntrntal(k,:)
 
 	enddo
 
 
 
-END PROGRAM dataread
+END PROGRAM ntrndataread
