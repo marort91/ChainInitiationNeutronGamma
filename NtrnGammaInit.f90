@@ -67,7 +67,7 @@ END MODULE mcnp_params
 
 MODULE mat_params
 
-	real, parameter :: lfission = 0.3
+	real, parameter :: lfission = 0.0
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
