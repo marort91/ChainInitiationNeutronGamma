@@ -3,10 +3,10 @@ PROGRAM ntrngammadataread
 	IMPLICIT NONE
 
 	INTEGER :: i, j, k
-	INTEGER, PARAMETER :: N = 100
+	INTEGER, PARAMETER :: N = 50
 	INTEGER, PARAMETER :: ntrnlens = 50
 	INTEGER, PARAMETER :: gammalens = 100
-	INTEGER, PARAMETER :: chains = 1e4
+	INTEGER, PARAMETER :: chains = 5000
 
 	REAL, DIMENSION(ntrnlens*chains,2) :: ntrnarr
 	REAL, DIMENSION(gammalens*chains) :: gammaarr

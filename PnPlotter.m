@@ -5,10 +5,10 @@ clc, clear, clf
 PnData = load('ProbN.txt');
 PgData = load('ProbG.txt');
 
-chains = 1e4;
+chains = 1e3;
 
 lf = 0; lc = 1 - lf;
-ti = 0; tf = 20; N = 101;
+ti = 0; tf = 20; N = 51;
 
 n = 1;
 

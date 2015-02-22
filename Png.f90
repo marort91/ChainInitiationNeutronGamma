@@ -5,8 +5,8 @@ PROGRAM Png
 	INTEGER :: i, j, k
 	INTEGER, PARAMETER :: ntrnlens = 50
 	INTEGER, PARAMETER :: gammalens = 100
-  INTEGER, PARAMETER :: N = 100
-  INTEGER, PARAMETER :: chains = 1e4
+  INTEGER, PARAMETER :: N = 50
+  INTEGER, PARAMETER :: chains = 5000
 	INTEGER, PARAMETER :: ng = 10
 
 	INTEGER, DIMENSION(chains,N+1) :: PnData = 0

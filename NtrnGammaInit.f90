@@ -67,7 +67,7 @@ END MODULE mcnp_params
 
 MODULE mat_params
 
-	real, parameter :: lfission = 0.0
+	real, parameter :: lfission = 0.3
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
@@ -103,6 +103,8 @@ PROGRAM neutrongammachain
 
 	open( unit = 1, file = "ntrnlifedata" )
 	open( unit = 2, file = "gammalifedata" )
+	open( unit = 3, file = "ntrnfissiondata")
+	open( unit = 4, file = "gammafissiondata")
 
 	!Initialize neutron and gamma indices
 	nidx = 1
@@ -125,12 +127,14 @@ PROGRAM neutrongammachain
 			nu = NtrnMult(rnmN)
 			mu = GammaMult(rnmG)
 
+			write( 3, * ), nu
+			write( 4, * ), mu
 			!print *, rnmN
 			!print *
-			print *, "Time of Fission: ", ntrntime(1,2,i)
+			!print *, "Time of Fission: ", ntrntime(1,2,i)
 			!print *
-			print *, "Fission neutrons created: ", nu
-			print *, "Gammas generated:         ", mu
+			!print *, "Fission neutrons created: ", nu
+			!print *, "Gammas generated:         ", mu
 			!print *, nubar
 
 			ntrntime(1,1,nidx+1:nidx+nu) = ntrntime(1,2,i)
