@@ -6,7 +6,7 @@ PROGRAM ntrngammadataread
 	INTEGER, PARAMETER :: N = 50
 	INTEGER, PARAMETER :: ntrnlens = 50
 	INTEGER, PARAMETER :: gammalens = 100
-	INTEGER, PARAMETER :: chains = 5000
+	INTEGER, PARAMETER :: chains = 1000
 
 	REAL, DIMENSION(ntrnlens*chains,2) :: ntrnarr
 	REAL, DIMENSION(gammalens*chains) :: gammaarr

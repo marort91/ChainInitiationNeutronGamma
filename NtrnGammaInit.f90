@@ -67,7 +67,7 @@ END MODULE mcnp_params
 
 MODULE mat_params
 
-	real, parameter :: lfission = 0.3
+	real, parameter :: lfission = 0.25
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
@@ -149,8 +149,8 @@ PROGRAM neutrongammachain
 
 			else
 
-			print *, "Gamma index: 		   ", gidx
-			print *
+			!print *, "Gamma index: 		   ", gidx
+			!print *
 
 			endif
 			!print *, idx
