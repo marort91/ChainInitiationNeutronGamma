@@ -54,6 +54,10 @@
 !! - Fixed neutron and gamma multiplicity functions. Verified no fission possible case. No more segmentation 		 !!
 !!   faults after fixing indexing. Nubar, mubar, and cumulative distribution functions implemented correctly!		 !!
 !!																													 !!
+!! 02/23/2015																										 !!
+!! - Implemented spontaneuous fission source (currently emitting one neutron per second). Seems to work with 		 !!
+!!   fission though it remains to be seen what happens to population after increasing branch length.				 !!
+!!																													 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 MODULE mcnp_params
@@ -67,13 +71,13 @@ END MODULE mcnp_params
 
 MODULE mat_params
 
-	real, parameter :: lfission = 0.25
+	real, parameter :: lfission = 0.0
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
     real, parameter :: Pfiss = lfission / ltot
     real, parameter :: Pcap = lcapture / ltot
-    integer :: nu, mu
+    integer :: nu, mu, spontNu
 
     !Binary Fission Assumption
     !integer, parameter :: nu = 2
@@ -88,12 +92,24 @@ PROGRAM neutrongammachain
 
 	IMPLICIT NONE
 
-	real(R8) :: dt, rnmN, rnmG
-	real(R8) :: t0, tf, TimeInteract
-	integer(I8) :: i, j, NtrnMult, GammaMult
+	!INTERFACE
+		
+	!	SUBROUTINE SpotaneousSrc(rnm,t0,time,SpontNu)
+
+	!	real, intent(IN) :: rnm, t0
+	!	real, intent(OUT) :: time
+	!	integer, intent(OUT) :: SpontNu
+
+	!	END SUBROUTINE SpotaneousSrc
+
+	!END INTERFACE	
+
+	real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu
+	real(R8) :: t0, tf, TimeInteract, SpotaneousSrcTime, tsp
+	integer(I8) :: i, j, NtrnMult, GammaMult, SpotaneousNu
 	integer :: nidx, gidx
 
-	integer, parameter :: branchlens = 50
+	integer, parameter :: branchlens = 1000
 	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
 	real(R8), dimension(1,branchlens*2) :: gammatime = 0
 
@@ -107,13 +123,30 @@ PROGRAM neutrongammachain
 	open( unit = 4, file = "gammafissiondata")
 
 	!Initialize neutron and gamma indices
-	nidx = 1
+	nidx = 0
 	gidx = 1
 
 	!Birth time of first neutron ( Random source to be implemented )
+	!Chain reaction start time
 	t0 = 0
 
+	!rnmSp = rang()
+	!ntrntime(1,1,1) = SpotaneousSrc(rnmSp)
+
+
+
 	do i=1,branchlens
+
+		rnmSp = rang()
+		tsp = SpotaneousSrcTime(t0,rnmSp)
+
+		rnmSpNu = rang()
+		spontNu = SpotaneousNu(rnmSpNu)
+
+		ntrntime(1,1,nidx+1:nidx+spontNu) = tsp
+		
+		nidx = nidx + spontNu
+		t0 = tsp
 
 		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		
@@ -158,6 +191,10 @@ PROGRAM neutrongammachain
 		endif
 
 		if ( nidx + 1 .gt. branchlens) exit
+
+		!rnmSp = rang()
+		!nidx = nidx + 1
+
 
 	enddo
 
@@ -302,6 +339,8 @@ FUNCTION NtrnMult(rnmN)
 	sum = 0
 	nubar = 0
 
+	NtrnMult = 2
+
 END FUNCTION NtrnMult
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -313,7 +352,7 @@ FUNCTION GammaMult(rnm)
 
 	IMPLICIT NONE
 
-	integer, parameter :: GammaMax = 8
+	integer, parameter :: GammaMax = 24
 	integer :: i
 
 	real(R8) :: rnm
@@ -341,7 +380,7 @@ FUNCTION GammaMult(rnm)
 
 	enddo
 
-	!print *, "CumMu: ", CumMu
+	print *, "CumMu: ", CumMu
 
 	do i=1,GammaMax
 
@@ -349,7 +388,7 @@ FUNCTION GammaMult(rnm)
 
 	enddo
 
-	rnm = rang()
+	!rnm = rang()
 
 	do i=1,GammaMax
 
@@ -380,7 +419,7 @@ END FUNCTION GammaMult
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-FUNCTION SpotaneousSrc()
+FUNCTION SpotaneousSrcTime(t0,rnm)
 
 	use mcnp_random
 	use mcnp_params
@@ -390,15 +429,106 @@ FUNCTION SpotaneousSrc()
 	integer, parameter :: S = 1
 	real(R8), parameter :: tmax = 1
 
-	real(R8) :: rnm, SpotaneousSrc
+	real(R8) :: rnm, t0, SpotaneousSrcTime
 
-	call system_clock( seed )
-	call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
+	!call system_clock( seed )
+	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
 
-	rnm = rang()
+	!rnm = rang()
 
-	SpotaneousSrc = rnm * tmax
+	SpotaneousSrcTime = t0 + rnm * S * tmax
 
-END FUNCTION SpotaneousSrc
+END FUNCTION SpotaneousSrcTime
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+FUNCTION SpotaneousNu(rnm)
+
+	use mcnp_random
+	use mcnp_params
+
+	IMPLICIT NONE
+
+	integer, parameter :: SpontNtrnMax = 8
+	integer :: i
+
+	real(R8) :: rnm, sum 
+	real(R8) :: spontnubar = 0
+	real(R8), dimension( SpontNtrnMax ) :: ProbSpontNu
+	real(R8), dimension( SpontNtrnMax ) :: CumSpontNu
+	integer(I8) :: SpotaneousNu
+
+	open( unit = 12, file = "spontntrn.mult")
+
+	read( unit = 12, FMT = * ) ProbSpontNu
+
+	close( unit = 12 )
+
+	do i=1,SpontNtrnMax
+
+		CumSpontNu(i) = sum + ProbSpontNu(i)
+		sum = CumSpontNu(i)
+
+	enddo
+
+	!print *, CumSpontNu
+
+	do i=1,SpontNtrnMax
+
+		spontnubar = spontnubar + ProbSpontNu(i)*(i-1)
+
+	enddo
+
+	!print *, spontnubar
+
+	do i=1,SpontNtrnMax
+
+		if ( rnm .lt. CumSpontNu(1) ) then
+
+			SpotaneousNu = 0
+
+		else if ( ( rnm .gt. CumSpontNu(i) ) .and. ( rnm .le. CumSpontNu(i+1) ) ) then
+
+			SpotaneousNu = i 
+
+		else if ( rnm .gt. CumSpontNu(SpontNtrnMax) ) then 
+
+			SpotaneousNu = SpontNtrnMax - 1
+
+		else
+
+			continue
+
+		endif
+
+	enddo
+
+	sum = 0
+	spontnubar = 0
+
+	!print *, rnm
+	!print *, SpotaneousNu
+	
+	!SpotaneousNu = 1
+
+END FUNCTION SpotaneousNu
+
+!SUBROUTINE SpontNu(rnm,t0,time,SpontNu)
+
+!	use mcnp_random
+!	use mcnp_params
+
+!	IMPLICIT NONE
+
+!	real, intent(IN) :: rnm, t0
+!	real, intent(OUT) :: time
+!	integer, intent(OUT) :: SpontNu
+
+!	integer, parameter :: S = 1
+!	real, parameter :: tmax = 1
+
+!	SpontNu = 1
+
+!	time = t0 + rnm * S * tmax
+
+!END SUBROUTINE SpotaneousSrc

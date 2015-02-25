@@ -4,34 +4,36 @@
 
 clear
 
-rm ntrnlife.txt
-rm gammalife.txt
-rm ProbGStats.txt
-rm ProbNStats.txt
-rm NtrnGammaInit.out
-rm ntrnfission.txt
-rm gammafission.txt
+#rm ntrnlife.txt
+#rm gammalife.txt
+#rm ProbGStats.txt
+#rm ProbNStats.txt
+#rm NtrnGammaInit.out
+#rm ntrnfission.txt
+#rm gammafission.txt
+
+rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption)
-lfission=0.25
+lfission=0.0
 
-sed -i.bak "70s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
+sed -i.bak "74s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=1000
-let chain=100000
+let loop=1
+let chain=1
 let idx=chain/loop
 
-timeint=50
+timeint=200
 
 for j in $(seq 1 $idx);
 do
 
-	rm ntrnlife.txt
-	rm gammalife.txt
+	#rm ntrnlife.txt
+	#rm gammalife.txt
 
 for i in $(seq 1 $loop);
 do

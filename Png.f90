@@ -3,10 +3,10 @@ PROGRAM Png
 	IMPLICIT NONE
 
 	INTEGER :: i, j, k
-	INTEGER, PARAMETER :: ntrnlens = 50
+	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
-    INTEGER, PARAMETER :: N = 50
-    INTEGER, PARAMETER :: chains = 1000
+    INTEGER, PARAMETER :: N = 200
+    INTEGER, PARAMETER :: chains = 1
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 99
 

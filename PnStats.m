@@ -2,7 +2,7 @@
 
 close all
 
-lf = 0.25;
+lf = 0.0;
 lc = 1 - lf;
 
 ProbsN = load('ProbNStats.txt');
@@ -22,8 +22,8 @@ mubar = sum(GammaFiss)/length(GammaFiss);
 
 ntrndev = (1/(sqrt(5e4)))*sum((y-nubar).^2);
 lens = length(ProbsN);
-chains = 100000;
-N = 50;
+chains = 1;
+N = 200;
 ti = 0; tf = 20;
 t = linspace(ti,tf,N+1);
 Pn = 1;
