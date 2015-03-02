@@ -58,6 +58,9 @@
 !! - Implemented spontaneuous fission source (currently emitting one neutron per second). Seems to work with 		 !!
 !!   fission though it remains to be seen what happens to population after increasing branch length.				 !!
 !!																													 !!
+!! 02/26/2015																										 !!
+!! -Implemented spontaneuous and initial neutron flag for different case analysis. Moment calculation through time   !!
+!!  to be implemented where moments are defined as sum (n**i)*Pn where i is the particular moment to be calculated   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 MODULE mcnp_params
@@ -68,7 +71,7 @@ MODULE mcnp_params
     integer(I8) :: seed
 
 END MODULE mcnp_params
-
+	
 MODULE mat_params
 
 	real, parameter :: lfission = 0.0
@@ -107,7 +110,7 @@ PROGRAM neutrongammachain
 	real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu
 	real(R8) :: t0, tf, TimeInteract, SpotaneousSrcTime, tsp
 	integer(I8) :: i, j, NtrnMult, GammaMult, SpotaneousNu
-	integer :: nidx, gidx
+	integer :: nidx, gidx, fissflag
 
 	integer, parameter :: branchlens = 1000
 	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
@@ -133,20 +136,26 @@ PROGRAM neutrongammachain
 	!rnmSp = rang()
 	!ntrntime(1,1,1) = SpotaneousSrc(rnmSp)
 
+	!Spontaneous fission ( fissflag = 1 ) or neutron present at start time flag ( fissflag = 0 )
 
+	fissflag = 0
 
 	do i=1,branchlens
 
-		rnmSp = rang()
-		tsp = SpotaneousSrcTime(t0,rnmSp)
+		if ( fissflag .eq. 1 ) then
 
-		rnmSpNu = rang()
-		spontNu = SpotaneousNu(rnmSpNu)
+			rnmSp = rang()
+			tsp = SpotaneousSrcTime(t0,rnmSp)
 
-		ntrntime(1,1,nidx+1:nidx+spontNu) = tsp
+			rnmSpNu = rang()
+			spontNu = SpotaneousNu(rnmSpNu)
+
+			ntrntime(1,1,nidx+1:nidx+spontNu) = tsp
 		
-		nidx = nidx + spontNu
-		t0 = tsp
+			nidx = nidx + spontNu
+			t0 = tsp
+
+		endif
 
 		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		

@@ -1,33 +1,23 @@
 #!/bin/bash
 
-# rm test.txt
-
 clear
-
-#rm ntrnlife.txt
-#rm gammalife.txt
-#rm ProbGStats.txt
-#rm ProbNStats.txt
-#rm NtrnGammaInit.out
-#rm ntrnfission.txt
-#rm gammafission.txt
 
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption)
 lfission=0.0
 
-sed -i.bak "74s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
+sed -i.bak "77s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=1
-let chain=1
+let loop=1000
+let chain=1000
 let idx=chain/loop
 
-timeint=200
+timeint=5
 
 for j in $(seq 1 $idx);
 do
@@ -62,7 +52,13 @@ gfortran -o ntrngammadatread ntrngammadataread.f90
 gfortran -o PNG.out Png.f90
 ./PNG.out
 
-cat ProbN.txt >> ProbNStats.txt
+#Output moment data here using some sort of reading of data within Png.f90
+
+cat PnMmnt0.txt >> ProbN0Stats.txt
+cat PnMmnt1.txt >> ProbN1Stats.txt
+cat PnMmnt2.txt >> ProbN2Stats.txt
+cat PnMmnt3.txt >> ProbN3Stats.txt
+cat PnMmnt4.txt >> ProbN4Stats.txt
 cat ProbG.txt >> ProbGStats.txt
 
 done
@@ -75,6 +71,7 @@ rm ntrngammadatread
 
 rm *.mod
 rm *.bak
+#rm fort.*
 
 sed -i.bak "5s/.*/lf = $lfission;/" PnStats.m
 sed -i.bak "26s/.*/N = $timeint;/" PnStats.m

@@ -22,8 +22,8 @@ mubar = sum(GammaFiss)/length(GammaFiss);
 
 ntrndev = (1/(sqrt(5e4)))*sum((y-nubar).^2);
 lens = length(ProbsN);
-chains = 1;
-N = 200;
+chains = 1000;
+N = 5;
 ti = 0; tf = 20;
 t = linspace(ti,tf,N+1);
 Pn = 1;

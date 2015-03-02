@@ -5,12 +5,12 @@ clc, clear, clf
 %PnData = load('ProbN.txt');
 %PgData = load('ProbG.txt');
 
-chains = 1;
+chains = 1000;
 
 lf = 0.0;
 lc = 1 - lf;
 ti = 0; tf = 20; 
-N = 200;
+N = 5;
 
 %DO NOT CHANGE ANYTHING ABOVE THIS LINE
 
