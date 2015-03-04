@@ -125,10 +125,6 @@ PROGRAM neutrongammachain
 	open( unit = 3, file = "ntrnfissiondata")
 	open( unit = 4, file = "gammafissiondata")
 
-	!Initialize neutron and gamma indices
-	nidx = 0
-	gidx = 1
-
 	!Birth time of first neutron ( Random source to be implemented )
 	!Chain reaction start time
 	t0 = 0
@@ -139,6 +135,20 @@ PROGRAM neutrongammachain
 	!Spontaneous fission ( fissflag = 1 ) or neutron present at start time flag ( fissflag = 0 )
 
 	fissflag = 0
+
+	!Initialize neutron and gamma indices
+
+	if ( fissflag .eq. 0 ) then
+
+		nidx = 1
+		gidx = 1
+
+		else
+
+		nidx = 0
+		gidx = 1
+
+	endif
 
 	do i=1,branchlens
 
@@ -348,7 +358,7 @@ FUNCTION NtrnMult(rnmN)
 	sum = 0
 	nubar = 0
 
-	NtrnMult = 2
+	!NtrnMult = 2
 
 END FUNCTION NtrnMult
 
@@ -389,7 +399,7 @@ FUNCTION GammaMult(rnm)
 
 	enddo
 
-	print *, "CumMu: ", CumMu
+	!print *, "CumMu: ", CumMu
 
 	do i=1,GammaMax
 

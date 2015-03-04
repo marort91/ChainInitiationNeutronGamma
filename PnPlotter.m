@@ -5,23 +5,23 @@ clc, clear, clf
 %PnData = load('ProbN.txt');
 %PgData = load('ProbG.txt');
 
-chains = 1000;
+chains = 10000;
 
 lf = 0.0;
 lc = 1 - lf;
 ti = 0; tf = 20; 
-N = 5;
+N = 50;
 
 %DO NOT CHANGE ANYTHING ABOVE THIS LINE
 
-PNDF = load('ProbNStats.txt');
-PGDF = load('ProbGStats.txt');
+PNDF = load('ProbN0Stats.txt');
+PGDF = load('ProbG0Stats.txt');
 
 %close all, clf
 
 t = linspace(ti,tf,N+1);
 
-n = 0:1:3;
+n = 1;
 %n = 0;
 
 for i = 1:length(n)

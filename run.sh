@@ -13,11 +13,11 @@ gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=1000
-let chain=1000
+let loop=10000
+let chain=10000
 let idx=chain/loop
 
-timeint=5
+timeint=50
 
 for j in $(seq 1 $idx);
 do
@@ -59,7 +59,12 @@ cat PnMmnt1.txt >> ProbN1Stats.txt
 cat PnMmnt2.txt >> ProbN2Stats.txt
 cat PnMmnt3.txt >> ProbN3Stats.txt
 cat PnMmnt4.txt >> ProbN4Stats.txt
-cat ProbG.txt >> ProbGStats.txt
+#cat ProbG.txt >> ProbGStats.txt
+cat PgMmnt0.txt >> ProbG0Stats.txt
+cat PgMmnt1.txt >> ProbG1Stats.txt
+cat PgMmnt2.txt >> ProbG2Stats.txt
+cat PgMmnt3.txt >> ProbG3Stats.txt
+cat PgMmnt4.txt >> ProbG4Stats.txt
 
 done
 

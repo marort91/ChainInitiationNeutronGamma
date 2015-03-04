@@ -5,8 +5,8 @@ PROGRAM Png
 	INTEGER :: i, j, k, mntidx
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
-    INTEGER, PARAMETER :: N = 5
-    INTEGER, PARAMETER :: chains = 1000
+    INTEGER, PARAMETER :: N = 50
+    INTEGER, PARAMETER :: chains = 10000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 99
 
@@ -49,7 +49,7 @@ PROGRAM Png
 
 	dt = (tf-t0)/N
 
-	print *, 0**0
+	!print *, 0**0
 
 	do i = 1,N+1
 
@@ -181,7 +181,7 @@ PROGRAM Png
 
 		open( unit = 20+j, file = filenamegamma(j) )
 
-		do i = 1,neut+1
+		do i = 1,gama+1
 
 			write(20+j,*), Pg(i,:,j)!/chains!/(chains*neut**(j-1))  !/(chains*(i**(j-1)))
 
