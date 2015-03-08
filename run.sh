@@ -13,7 +13,7 @@ gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=10000
+let loop=1000
 let chain=10000
 let idx=chain/loop
 
