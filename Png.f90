@@ -6,7 +6,7 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 50
-    INTEGER, PARAMETER :: chains = 50000
+    INTEGER, PARAMETER :: chains = 10000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 99
 

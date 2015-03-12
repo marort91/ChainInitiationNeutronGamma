@@ -5,20 +5,20 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption)
-lfission=0.49
+lfission=0.15
 
-sed -i.bak "83s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
+sed -i.bak "90s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
 
 #Spontaneous fission source or neutron present initial condition flag
 fissflag=0
-sed -i.bak "127s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
+sed -i.bak "153s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=50000
-let chain=50000
+let loop=10000
+let chain=10000
 let idx=chain/loop
 
 timeint=50
