@@ -6,7 +6,7 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 50
-    INTEGER, PARAMETER :: chains = 1000
+    INTEGER, PARAMETER :: chains = 50000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 99
 
@@ -40,7 +40,7 @@ PROGRAM Png
 		filename(i) = fid(i)//filenum//'.txt'
 		filenamegamma(i) = fidg(i)//filenum//'.txt'
 		!print *, filename
-		print *, filenamegamma(i)
+		!print *, filenamegamma(i)
 
 	enddo
 

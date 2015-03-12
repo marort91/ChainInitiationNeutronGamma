@@ -6,7 +6,7 @@ PROGRAM ntrngammadataread
 	INTEGER, PARAMETER :: N = 50
 	INTEGER, PARAMETER :: ntrnlens = 1000
 	INTEGER, PARAMETER :: gammalens = 100
-	INTEGER, PARAMETER :: chains = 1000
+	INTEGER, PARAMETER :: chains = 50000
 
 	REAL, DIMENSION(ntrnlens*chains,2) :: ntrnarr
 	REAL, DIMENSION(gammalens*chains) :: gammaarr
@@ -42,7 +42,7 @@ PROGRAM ntrngammadataread
 	!Time Tally Bins
 
 	t0 = 0
-	tf = 50
+	tf = 20
 
 	dt = (tf - t0)/N
 

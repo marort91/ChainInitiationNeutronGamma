@@ -61,6 +61,19 @@
 !! 02/26/2015																										 !!
 !! -Implemented spontaneuous and initial neutron flag for different case analysis. Moment calculation through time   !!
 !!  to be implemented where moments are defined as sum (n**i)*Pn where i is the particular moment to be calculated   !!
+!! 																													 !!
+!! 03/10/2015																										 !!
+!! -Multiplicity data read currently being made into own subroutine. Prevents need to read data over branch loops.   !!
+!!  Currently having trouble reading all values on one line. Might have to put each value on own line. To be tested. !!
+!!  Also, should try to implement sed command in bash script that is independent of line numbers.                    !!
+!!																													 !!
+!! 03/12/2015																										 !!
+!! -Implemented subroutine that reads neutron and gamma multiplicity data outside neutron chain reaction loop.       !!
+!! -Need to use MCNP parameters in subroutines and functions to keep variable types consistent. "use mcnp_params"    !!
+!!  should be used inside subroutine and variable initializations previously implemented used.                       !!
+!! -Calculations of nubar and mubar should be done by subroutine in order to check for k-effective value of problem. !!
+!! -Sed editing of files not dependent on line number not yet implemented, be careful!!!!!                           !!
+!!																												     !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 MODULE mcnp_params
@@ -68,13 +81,13 @@ MODULE mcnp_params
 	integer, parameter :: R8 = selected_real_kind(15,307)
     integer, parameter :: I8 = selected_int_kind(18)
 
-    integer(I8) :: seed
+    integer(I8) :: seed = 1
 
 END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: lfission = 0.0
+	real, parameter :: lfission = 1.0
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
@@ -95,42 +108,42 @@ PROGRAM neutrongammachain
 
 	IMPLICIT NONE
 
-	!INTERFACE
-		
-	!	SUBROUTINE SpotaneousSrc(rnm,t0,time,SpontNu)
-
-	!	real, intent(IN) :: rnm, t0
-	!	real, intent(OUT) :: time
-	!	integer, intent(OUT) :: SpontNu
-
-	!	END SUBROUTINE SpotaneousSrc
-
-	!END INTERFACE	
-
 	real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu
+	!real(R8) :: dt, rnmSp, rnmSpNu
+	!real :: rnmN, rnmG
+
 	real(R8) :: t0, tf, TimeInteract, SpotaneousSrcTime, tsp
 	integer(I8) :: i, j, NtrnMult, GammaMult, SpotaneousNu
+	!integer(I8) :: i, j, SpotaneousNu
+	!integer :: NtrnMult, GammaMult
 	integer :: nidx, gidx, fissflag
 
 	integer, parameter :: branchlens = 1000
 	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
 	real(R8), dimension(1,branchlens*2) :: gammatime = 0
 
+	!Experimental implementation of new data reader subroutine and functions
+	integer(I8) :: ntrnl, gammal
+	real(R8), dimension(:), allocatable :: CumNu, CumMu
+
+	call datalens(ntrnl, gammal)
+
+	allocate(CumNu(ntrnl))
+	allocate(CumMu(gammal))
+
+	call CumDistFcnGen(ntrnl, gammal, CumNu, CumMu)
+
 	!Initialize MCNP Random Number Generator
 	call system_clock(seed)
-	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
+	call RN_init_problem( 2, seed, 0_I8, 0_I8, 0 )
 
 	open( unit = 1, file = "ntrnlifedata" )
 	open( unit = 2, file = "gammalifedata" )
 	open( unit = 3, file = "ntrnfissiondata")
 	open( unit = 4, file = "gammafissiondata")
 
-	!Birth time of first neutron ( Random source to be implemented )
 	!Chain reaction start time
 	t0 = 0
-
-	!rnmSp = rang()
-	!ntrntime(1,1,1) = SpotaneousSrc(rnmSp)
 
 	!Spontaneous fission ( fissflag = 1 ) or neutron present at start time flag ( fissflag = 0 )
 
@@ -167,25 +180,33 @@ PROGRAM neutrongammachain
 
 		endif
 
+		!if ( nidx .lt. 0 ) exit
+
 		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		
 		ntrntime(1,2,i) = ntrntime(1,1,i) + TimeInteract(ntrntime(1,1,i))
+
+		!print *, nidx
 
 		if (rang() .le. Pfiss) then
 
 			rnmN = rang()
 			rnmG = rang()
 
-			nu = NtrnMult(rnmN)
-			mu = GammaMult(rnmG)
+			!nu = NtrnMult(rnmN)
+			!mu = GammaMult(rnmG)
+
+			nu = NtrnMult(ntrnl,CumNu,rnmN)
+			mu = GammaMult(gammal,CumMu,rnmG)
 
 			write( 3, * ), nu
 			write( 4, * ), mu
-			!print *, rnmN
+			print *, CumNu
+			print *, rnmN
 			!print *
 			!print *, "Time of Fission: ", ntrntime(1,2,i)
 			!print *
-			!print *, "Fission neutrons created: ", nu
+			print *, "Fission neutrons created: ", nu
 			!print *, "Gammas generated:         ", mu
 			!print *, nubar
 
@@ -286,7 +307,7 @@ END FUNCTION TimeInteract
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
-FUNCTION NtrnMult(rnmN)
+FUNCTION NtrnMultNew(rnmN)
 
 	use mcnp_random
 	use mcnp_params
@@ -301,7 +322,7 @@ FUNCTION NtrnMult(rnmN)
 	real :: nubar = 0
 	real, dimension( NtrnMax ) :: ProbNu
 	real, dimension( NtrnMax ) :: CumNu = 0
-	integer(I8) :: NtrnMult
+	integer(I8) :: NtrnMultNew
 
 	call system_clock( seed )
 	call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
@@ -337,15 +358,15 @@ FUNCTION NtrnMult(rnmN)
 
 		if ( rnmN .lt. CumNu(1) ) then
 
-			NtrnMult = 0
+			NtrnMultNew = 0
 
 		else if ( ( rnmN .gt. CumNu(i) ) .and. ( rnmN .le. CumNu(i+1) ) ) then
 
-			NtrnMult = i 
+			NtrnMultNew = i 
 
 		else if ( rnmN .gt. CumNu(NtrnMax) ) then 
 
-			NtrnMult = NtrnMax - 1
+			NtrnMultNew = NtrnMax - 1
 
 		else
 
@@ -358,13 +379,13 @@ FUNCTION NtrnMult(rnmN)
 	sum = 0
 	nubar = 0
 
-	!NtrnMult = 2
+	NtrnMultNew = 2
 
-END FUNCTION NtrnMult
+END FUNCTION NtrnMultNew
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-FUNCTION GammaMult(rnm)
+FUNCTION GammaMultNew(rnm)
 
 	use mcnp_random
 	use mcnp_params
@@ -379,7 +400,7 @@ FUNCTION GammaMult(rnm)
 	real(R8) :: mubar = 0
 	real(R8), dimension( GammaMax ) :: ProbMu
 	real(R8), dimension( GammaMax ) :: CumMu
-	integer(I8) :: GammaMult
+	integer(I8) :: GammaMultNew
 
 	!call system_clock( seed )
 	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
@@ -413,15 +434,15 @@ FUNCTION GammaMult(rnm)
 
 		if ( rnm .lt. CumMu(1) ) then
 
-			GammaMult = 0
+			GammaMultNew = 0
 
 		else if ( ( rnm .gt. CumMu(i) ) .and. ( rnm .le. CumMu(i+1) ) ) then
 
-			GammaMult = i 
+			GammaMultNew = i 
 
 		else if ( rnm .gt. CumMu(GammaMax) ) then 
 
-			GammaMult = GammaMax - 1
+			GammaMultNew = GammaMax - 1
 
 		else
 
@@ -434,7 +455,7 @@ FUNCTION GammaMult(rnm)
 	sum = 0
 	mubar = 0
 
-END FUNCTION GammaMult
+END FUNCTION GammaMultNew
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -532,6 +553,152 @@ FUNCTION SpotaneousNu(rnm)
 
 END FUNCTION SpotaneousNu
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+SUBROUTINE datalens( nlines, glines )
+
+	use mcnp_params
+
+	IMPLICIT NONE
+
+	integer :: io
+	integer(I8), intent(out) :: nlines, glines
+
+	open( unit = 98, file = 'ntrn.mult', status = 'old', action = 'read' )
+
+	do
+		read( 98, *, iostat=io )
+
+		if ( io .ne. 0 ) exit
+
+		nlines = nlines + 1
+
+	enddo
+
+	rewind(98)
+
+	open( unit = 99, file = 'gamma.mult', status = 'old', action = 'read' )
+
+	do
+
+		read( 99, *, iostat=io )
+
+		if ( io .ne. 0 ) exit
+
+		glines = glines + 1
+
+	enddo
+
+	rewind(99)
+
+END SUBROUTINE datalens
+
+SUBROUTINE CumDistFcnGen( nlines, glines, CumNu, CumMu )
+
+	use mcnp_params
+
+	IMPLICIT NONE
+
+	integer(I8), intent(in) :: nlines, glines
+	real(R8), dimension(nlines), intent(out) :: CumNu
+	real(R8), dimension(glines), intent(out) :: CumMu
+
+	integer :: i
+	real :: sumn = 0, sumg = 0
+	real, dimension(nlines) :: ProbNu
+	real, dimension(glines) :: ProbMu
+
+	open( unit = 98, file = 'ntrn.mult', status = 'old', action = 'read' )
+	open( unit = 99, file = 'gamma.mult', status = 'old', action = 'read' )
+
+
+	read( 98, FMT = * ) ProbNu
+	read( 99, FMT = * ) ProbMu
+
+	do i = 1,nlines
+
+		CumNu(i) = sumn + ProbNu(i)
+		sumn = CumNu(i)
+
+	enddo
+
+	do i = 1, glines
+
+		CumMu(i) = sumg + ProbMu(i)
+		sumg = CumMu(i)
+
+	enddo
+
+END SUBROUTINE CumDistFcnGen
+
+FUNCTION NtrnMult(N,CumNu,rnm)
+
+	use mcnp_params
+
+	IMPLICIT NONE
+
+	integer(I8) :: N, NtrnMult, i
+	real(R8), dimension(N) :: CumNu
+	real(R8) :: rnm
+
+	do i=1,N
+
+		if ( rnm .lt. CumNu(1) ) then
+
+			NtrnMult = 0
+
+		else if ( ( rnm .gt. CumNu(i) ) .and. ( rnm .le. CumNu(i+1) ) ) then
+
+			NtrnMult = i 
+
+		else if ( rnm .gt. CumNu(N) ) then 
+
+			NtrnMult = N - 1
+
+		else
+
+			continue
+
+		endif
+
+	enddo
+
+END FUNCTION NtrnMult
+
+FUNCTION GammaMult(G,CumMu,rnm)
+
+	use mcnp_params
+
+	IMPLICIT NONE
+
+	integer(I8) :: G, GammaMult, i
+	real(R8), dimension(G) :: CumMu
+	real(R8) :: rnm
+
+	do i=1,G
+
+		if ( rnm .lt. CumMu(1) ) then
+
+			GammaMult = 0
+
+		else if ( ( rnm .gt. CumMu(i) ) .and. ( rnm .le. CumMu(i+1) ) ) then
+
+			GammaMult = i 
+
+		else if ( rnm .gt. CumMu(G) ) then 
+
+			GammaMult = G - 1
+
+		else
+
+			continue
+
+		endif
+
+	enddo
+
+END FUNCTION GammaMult
+
 !SUBROUTINE SpontNu(rnm,t0,time,SpontNu)
 
 !	use mcnp_random
@@ -551,3 +718,22 @@ END FUNCTION SpotaneousNu
 !	time = t0 + rnm * S * tmax
 
 !END SUBROUTINE SpotaneousSrc
+
+!SUBROUTINE NtrnGammaDataMult(CumNu,CumMu)
+
+!	IMPLICIT NONE
+
+!	real, dimension(:), intent(out), allocatable :: CumNu, CumMu
+!	integer :: lensntrn, lensgamma
+
+!	open( unit = 98, file = 'ntrn.mult', status = 'old', action = 'read' )
+!	open( unit = 99, file = 'gamma.mult', status = 'old', action = 'read' )
+
+!	read( 98, * ), lensntrn
+!	read( 99, * ), lensgamma
+
+!	allocate( CumNu (lensntrn) ) 
+!	allocate( CumMu (lensgamma) )
+
+!END SUBROUTINE
+

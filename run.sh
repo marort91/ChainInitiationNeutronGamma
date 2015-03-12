@@ -5,19 +5,28 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption)
-lfission=0.0
+lfission=0.49
 
-sed -i.bak "77s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
+sed -i.bak "83s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
+
+#Spontaneous fission source or neutron present initial condition flag
+fissflag=0
+sed -i.bak "127s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=1000
-let chain=10000
+let loop=50000
+let chain=50000
 let idx=chain/loop
 
 timeint=50
+
+# Final time value passes to all Fortran subroutines
+tf=20
+
+sed -i.bak "45s/.*/	tf = $tf/" ntrngammadataread.f90
 
 for j in $(seq 1 $idx);
 do
@@ -85,3 +94,5 @@ sed -i.bak "25s/.*/chains = $chain;/" PnStats.m
 sed -i.bak "8s/.*/chains = $chain;/" PnPlotter.m
 sed -i.bak "10s/.*/lf = $lfission;/" PnPlotter.m
 sed -i.bak "13s/.*/N = $timeint;/" PnPlotter.m
+
+echo Probability of Fission: $lfission
