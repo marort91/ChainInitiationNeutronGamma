@@ -87,7 +87,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: lfission = 0.15
+	real, parameter :: lfission = 0.10
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
@@ -139,7 +139,8 @@ PROGRAM neutrongammachain
 
 	!Initialize MCNP Random Number Generator
 	call system_clock(seed)
-	call RN_init_problem( 2, seed, 0_I8, 0_I8, 0 )
+	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
+	!call RN_init_problem( 2, 1426194759751188_I8, 0_I8, 0_I8, 1 )
 
 	open( unit = 1, file = "ntrnlifedata" )
 	open( unit = 2, file = "gammalifedata" )
@@ -149,8 +150,6 @@ PROGRAM neutrongammachain
 	!Chain reaction start time
 	t0 = 0
 
-	!Spontaneous fission ( fissflag = 1 ) or neutron present at start time flag ( fissflag = 0 )
-	fissflag = 0
 	fissflag = 0
 
 	!Initialize neutron and gamma indices
@@ -215,6 +214,8 @@ PROGRAM neutrongammachain
 			!print *, "Gammas generated:         ", mu
 			!print *, nubar
 
+			!print *, gidx, gidx+mu-1
+
 			ntrntime(1,1,nidx+1:nidx+nu) = ntrntime(1,2,i)
 			gammatime(1,gidx:gidx+mu-1) = ntrntime(1,2,i)
 			
@@ -235,7 +236,8 @@ PROGRAM neutrongammachain
 
 		endif
 
-		if ( nidx + 1 .gt. branchlens) exit
+		if ( nidx + 1 .gt. branchlens ) exit
+		if ( gidx + 1 .gt. 2*branchlens ) exit
 
 		!rnmSp = rang()
 		!nidx = nidx + 1
@@ -329,8 +331,8 @@ FUNCTION NtrnMultNew(rnmN)
 	real, dimension( NtrnMax ) :: CumNu = 0
 	integer(I8) :: NtrnMultNew
 
-	call system_clock( seed )
-	call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
+	!call system_clock( seed )
+	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
 
 	!ProbNu = (/ 0.2, 0.3, 0.2, 0.1, 0.1, 0.05, 0.05 /)
 

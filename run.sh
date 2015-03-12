@@ -5,7 +5,7 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption)
-lfission=0.15
+lfission=0.10
 
 sed -i.bak "90s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
 
@@ -17,8 +17,8 @@ gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=10000
-let chain=10000
+let loop=1000
+let chain=1000
 let idx=chain/loop
 
 timeint=50
