@@ -74,6 +74,13 @@
 !! -Calculations of nubar and mubar should be done by subroutine in order to check for k-effective value of problem. !!
 !! -Sed editing of files not dependent on line number not yet implemented, be careful!!!!!                           !!
 !!																												     !!
+!! 03/13/2015																										 !!
+!! -Finally stamped out segmentation faults for close to critical problems. Gamma and neutron indices are checked    !!
+!!  and logic statements prevent accessing non-allocated array locations.											 !!
+!! -Noticed spontaneous fission driven problems overestimated number of neutrons present. Checked average emission   !!
+!!  time and found that emission time was half than expected. Average emission time must be doubled I believe. Will  !!
+!!  check for different source strengths.																			 !!
+!!																													 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 MODULE mcnp_params
@@ -87,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: lfission = 0.10
+	real, parameter :: lfission = 0.0
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
@@ -113,27 +120,27 @@ PROGRAM neutrongammachain
 	!real :: rnmN, rnmG
 
 	real(R8) :: t0, tf, TimeInteract, SpotaneousSrcTime, tsp
-	!integer(I8) :: i, j, NtrnMult, GammaMult, SpontNu
-	integer(I8) :: i, j, NtrnMultNew, GammaMultNew, SpontaneousNu
+	integer(I8) :: i, j, NtrnMult, GammaMult, SpontNu
+	!integer(I8) :: i, j, NtrnMultNew, GammaMultNew, SpontaneousNu
 	!integer(I8) :: i, j, SpotaneousNu
 	!integer :: NtrnMult, GammaMult
-	integer :: nidx, gidx, fissflag
+	integer :: nidx, gidx, fissflag, ICNtrnFlag
 
 	integer, parameter :: branchlens = 1000
 	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
 	real(R8), dimension(1,branchlens*2) :: gammatime = 0
 
 	!Experimental implementation of new data reader subroutine and functions
-	!integer(I8) :: ntrnl, gammal, spntl
-	!real(R8), dimension(:), allocatable :: CumNu, CumMu, CumSpontNu
+	integer(I8) :: ntrnl, gammal, spntl
+	real(R8), dimension(:), allocatable :: CumNu, CumMu, CumSpontNu
 
-	!call datalens(ntrnl, gammal, spntl)
+	call datalens(ntrnl, gammal, spntl)
 
-	!allocate(CumNu(ntrnl))
-	!allocate(CumMu(gammal))
-	!allocate(CumSpontNu(spntl))
+	allocate(CumNu(ntrnl))
+	allocate(CumMu(gammal))
+	allocate(CumSpontNu(spntl))
 
-	!call CumDistFcnGen(ntrnl, gammal, spntl, CumNu, CumMu, CumSpontNu)
+	call CumDistFcnGen(ntrnl, gammal, spntl, CumNu, CumMu, CumSpontNu)
 
 	!print *, CumSpontNu	
 
@@ -142,19 +149,23 @@ PROGRAM neutrongammachain
 	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 	!call RN_init_problem( 2, 1426194759751188_I8, 0_I8, 0_I8, 1 )
 
-	open( unit = 1, file = "ntrnlifedata" )
-	open( unit = 2, file = "gammalifedata" )
-	open( unit = 3, file = "ntrnfissiondata")
-	open( unit = 4, file = "gammafissiondata")
+	open( unit = 1, file = "ntrnlifedata", position = "append", action = "write")
+	open( unit = 2, file = "gammalifedata", position = "append", action = "write")
+	open( unit = 3, file = "ntrnfissiondata", position = "append", action = "write")
+	open( unit = 4, file = "gammafissiondata", position = "append", action = "write")
+	!open( unit = 1, file = "ntrnlifedata" )
+	!open( unit = 2, file = "gammalifedata" )
+	!open( unit = 3, file = "ntrnfissiondata" )
+	!open( unit = 4, file = "gammafissiondata" )
 
-	!Chain reaction start time
+	ICNtrnFlag = 1
 	t0 = 0
 
-	fissflag = 0
+	fissflag = 1
 
 	!Initialize neutron and gamma indices
 
-	if ( fissflag .eq. 0 ) then
+	if ( ICNtrnFlag .eq. 1 ) then
 
 		nidx = 1
 		gidx = 1
@@ -174,17 +185,21 @@ PROGRAM neutrongammachain
 			tsp = SpotaneousSrcTime(t0,rnmSp)
 
 			rnmSpNu = rang()
-			!spNu = SpontNu(spntl,CumSpontNu,rnmSpNu)
-			spNu = SpontaneousNu(rnmSpNu)
+			spNu = SpontNu(spntl,CumSpontNu,rnmSpNu)
+			!spNu = SpontaneousNu(rnmSpNu)
 
 			ntrntime(1,1,nidx+1:nidx+spNu) = tsp
+
+			!print *, nidx+1, nidx+spNu
 		
-			nidx = nidx + spNu
+			nidx = nidx + spNu 
 			t0 = tsp
 
 		endif
 
-		if ( nidx .lt. 0 ) exit
+		!if ( nidx .lt. 0 ) exit
+
+		!if ( ( lfission .eq. 0_R8 ) .and. (ICNtrnFlag .ne. 0 ) ) exit
 
 		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		
@@ -197,11 +212,11 @@ PROGRAM neutrongammachain
 			rnmN = rang()
 			rnmG = rang()
 
-			nu = NtrnMultNew(rnmN)
-			mu = GammaMultNew(rnmG)
+			!nu = NtrnMultNew(rnmN)
+			!mu = GammaMultNew(rnmG)
 
-			!nu = NtrnMult(ntrnl,CumNu,rnmN)
-			!mu = GammaMult(gammal,CumMu,rnmG)
+			nu = NtrnMult(ntrnl,CumNu,rnmN)
+			mu = GammaMult(gammal,CumMu,rnmG)
 
 			write( 3, * ), nu
 			write( 4, * ), mu
@@ -267,6 +282,8 @@ PROGRAM neutrongammachain
 		write( 2, * ), gammatime(1,i)
 
 	enddo
+
+	!open( unit = 17, file = 'ntrnlife.txt')
 
 END PROGRAM neutrongammachain
 
@@ -473,8 +490,8 @@ FUNCTION SpotaneousSrcTime(t0,rnm)
 
 	IMPLICIT NONE
 
-	integer, parameter :: S = 1
-	real(R8), parameter :: tmax = 1
+	real(R8), parameter :: S = 1
+	real(R8), parameter :: tmax = 2
 
 	real(R8) :: rnm, t0, SpotaneousSrcTime
 
@@ -483,7 +500,12 @@ FUNCTION SpotaneousSrcTime(t0,rnm)
 
 	!rnm = rang()
 
-	SpotaneousSrcTime = t0 + rnm * S * tmax
+	open( unit = 15, file = 'SpontNuEmission.txt' )
+
+	!write(15,*) tmax/2 !rnm/S*tmax !*2
+
+	SpotaneousSrcTime = t0 + rnm / S * tmax ! *2
+	!SpotaneousSrcTime = t0 + tmax
 
 END FUNCTION SpotaneousSrcTime
 
@@ -602,7 +624,7 @@ SUBROUTINE datalens( nlines, glines, spntlines )
 
 	rewind(98)
 
-	open( unit = 99, file = 'spontntrn.mult', status = 'old', action = 'read' )
+	open( unit = 99, file = 'spontntrntest.mult', status = 'old', action = 'read' )
 
 	do
 
@@ -641,7 +663,7 @@ SUBROUTINE CumDistFcnGen( nlines, glines, spntlines, CumNu, CumMu, CumSpontNu )
 
 	open( unit = 97, file = 'ntrn.mult', status = 'old', action = 'read' )
 	open( unit = 98, file = 'gamma.mult', status = 'old', action = 'read' )
-	open( unit = 99, file = 'spontntrn.mult', status = 'old', action = 'read' )
+	open( unit = 99, file = 'spontntrntest.mult', status = 'old', action = 'read' )
 
 
 	read( 97, FMT = * ) ProbNu
@@ -706,6 +728,8 @@ FUNCTION NtrnMult(N,CumNu,rnm)
 		endif
 
 	enddo
+
+	NtrnMult = 2
 
 END FUNCTION NtrnMult
 
@@ -774,6 +798,12 @@ FUNCTION SpontNu(S,CumSpontNu,rnm)
 		endif
 
 	enddo
+
+	!SpontNu = 1
+
+	open( unit = 16, file = 'SpontNuEmit.txt' )
+
+	write(16,*) SpontNu
 
 END FUNCTION SpontNu
 

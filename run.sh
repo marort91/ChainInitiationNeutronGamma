@@ -5,28 +5,42 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption)
-lfission=0.10
+lfission=0.0
 
-sed -i.bak "90s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
+sed -i.bak "97s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
 
 #Spontaneous fission source or neutron present initial condition flag
-fissflag=0
-sed -i.bak "153s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
+#If ICNtrnFlag = 0, N(0) = 0, else N(0) = 1
+ICNtrnFlag=1
+sed -i.bak "161s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
+
+fissflag=1
+sed -i.bak "164s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
+
+branchlens=1000
+
+sed -i.bak "129s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
+sed -i.bak "7s/.*/	INTEGER, PARAMETER :: ntrnlens = $branchlens/" ntrngammadataread.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=1000
-let chain=1000
+let loop=10000
+let chain=10000
 let idx=chain/loop
 
-timeint=50
+timeint=10
 
 # Final time value passes to all Fortran subroutines
 tf=20
 
 sed -i.bak "45s/.*/	tf = $tf/" ntrngammadataread.f90
+
+#rm ntrnlifedata
+#rm gammalifedata
+#rm ntrnfissiondata
+#rm gammafissiondata
 
 for j in $(seq 1 $idx);
 do
@@ -36,17 +50,32 @@ do
 
 for i in $(seq 1 $loop);
 do
+(
 	./NtrnGammaInit.out
 	echo $i
 	cat ntrnlifedata >> ntrnlife.txt
 	cat gammalifedata >> gammalife.txt
 	cat ntrnfissiondata >> ntrnfission.txt
 	cat gammafissiondata >> gammafission.txt
+
+	if [ $fissflag = 1 ]; then
+
+		cat SpontNuEmission.txt >> SpontNuEmiss.txt
+		cat SpontNuEmit.txt >> SpontNuNumber.txt
+		rm SpontNuEmission.txt
+		rm SpontNuEmit.txt
+
+	fi
+	
 	rm ntrnlifedata
 	rm gammalifedata
 	rm ntrnfissiondata
-	rm gammafissiondata
+	rm gammafissiondata 
+	) #&
+
 done
+
+#wait
 
 echo $j
 
@@ -55,6 +84,7 @@ sed -i.bak "9s/.*/	INTEGER, PARAMETER :: chains = $loop/" ntrngammadataread.f90
 sed -i.bak "8s/.*/    INTEGER, PARAMETER :: N = $timeint/" Png.f90
 sed -i.bak "9s/.*/    INTEGER, PARAMETER :: chains = $loop/" Png.f90
 
+#gfortran -fopenmp -o ntrngammadatread ntrngammadataread.f90
 gfortran -o ntrngammadatread ntrngammadataread.f90
 ./ntrngammadatread
 

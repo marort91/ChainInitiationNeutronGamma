@@ -3,9 +3,9 @@ PROGRAM ntrngammadataread
 	IMPLICIT NONE
 
 	INTEGER :: i, j, k
-	INTEGER, PARAMETER :: N = 50
+	INTEGER, PARAMETER :: N = 10
 	INTEGER, PARAMETER :: ntrnlens = 1000
-	INTEGER, PARAMETER :: gammalens = 100
+	INTEGER, PARAMETER :: gammalens = 2 * ntrnlens
 	INTEGER, PARAMETER :: chains = 1000
 
 	REAL, DIMENSION(ntrnlens*chains,2) :: ntrnarr
@@ -18,29 +18,35 @@ PROGRAM ntrngammadataread
 
 	! Reading neutron and gamma lifetime text files
 	open( unit = 1, file = "ntrnlife.txt" )
+	!open( unit = 1, file = "ntrnlifedata" )
 	
+	!$OMP PARALLEL DO
 	do i=1,ntrnlens*chains
 
 		read( unit = 1, FMT =  * ) ntrnarr(i,:)
 
 	enddo
+	!$OMP END PARALLEL DO
 
 	close( unit = 1 )
 
 	open( unit = 2, file = "gammalife.txt" )
+	!open( unit = 2, file = "gammalifedata" )
 
+	!$OMP PARALLEL DO
 	do i=1,gammalens*chains
 
 		read( unit = 2, FMT = * ) gammaarr(i)
 
 	enddo
+	!$OMP END PARALLEL DO
 
 	close( unit = 2 )
-
+	tf = 20
 	!print *, gammaarr
 
 	!Time Tally Bins
-
+	tf = 20
 	t0 = 0
 	tf = 20
 
