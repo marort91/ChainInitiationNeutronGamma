@@ -5,7 +5,7 @@ PROGRAM Png
 	INTEGER :: i, j, k, mntidx
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
-    INTEGER, PARAMETER :: N = 10
+    INTEGER, PARAMETER :: N = 20
     INTEGER, PARAMETER :: chains = 1000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 99

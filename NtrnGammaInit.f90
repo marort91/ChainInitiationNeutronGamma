@@ -94,12 +94,13 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: lfission = 0.0
+	real, parameter :: lfission = 0.2
     real, parameter :: lcapture = 1.0 - lfission
     real, parameter :: ltot = lfission + lcapture
 
-    real, parameter :: Pfiss = lfission / ltot
     real, parameter :: Pcap = lcapture / ltot
+    real, parameter :: Pfiss = lfission / ltot
+	real, parameter :: Pleakage = 0.0
     integer :: nu, mu, spNu
 
     !Binary Fission Assumption
@@ -115,20 +116,15 @@ PROGRAM neutrongammachain
 
 	IMPLICIT NONE
 
-	real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu
-	!real(R8) :: dt, rnmSp, rnmSpNu
-	!real :: rnmN, rnmG
+	real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu, rnmLeak
 
 	real(R8) :: t0, tf, TimeInteract, SpotaneousSrcTime, tsp
 	integer(I8) :: i, j, NtrnMult, GammaMult, SpontNu
-	!integer(I8) :: i, j, NtrnMultNew, GammaMultNew, SpontaneousNu
-	!integer(I8) :: i, j, SpotaneousNu
-	!integer :: NtrnMult, GammaMult
-	integer :: nidx, gidx, fissflag, ICNtrnFlag
+	integer(I8) :: ICNtrnFlag, fissflag, nidx, gidx
 
 	integer, parameter :: branchlens = 1000
 	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
-	real(R8), dimension(1,branchlens*2) :: gammatime = 0
+	real(R8), dimension(1,2,branchlens*10) :: gammatime = 0
 
 	!Experimental implementation of new data reader subroutine and functions
 	integer(I8) :: ntrnl, gammal, spntl
@@ -142,25 +138,18 @@ PROGRAM neutrongammachain
 
 	call CumDistFcnGen(ntrnl, gammal, spntl, CumNu, CumMu, CumSpontNu)
 
-	!print *, CumSpontNu	
-
 	!Initialize MCNP Random Number Generator
 	call system_clock(seed)
 	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
-	!call RN_init_problem( 2, 1426194759751188_I8, 0_I8, 0_I8, 1 )
-
+	
 	open( unit = 1, file = "ntrnlifedata", position = "append", action = "write")
 	open( unit = 2, file = "gammalifedata", position = "append", action = "write")
 	open( unit = 3, file = "ntrnfissiondata", position = "append", action = "write")
 	open( unit = 4, file = "gammafissiondata", position = "append", action = "write")
-	!open( unit = 1, file = "ntrnlifedata" )
-	!open( unit = 2, file = "gammalifedata" )
-	!open( unit = 3, file = "ntrnfissiondata" )
-	!open( unit = 4, file = "gammafissiondata" )
-
-	ICNtrnFlag = 1
+	
 	t0 = 0
-
+	
+	ICNtrnFlag = 0
 	fissflag = 1
 
 	!Initialize neutron and gamma indices
@@ -186,77 +175,62 @@ PROGRAM neutrongammachain
 
 			rnmSpNu = rang()
 			spNu = SpontNu(spntl,CumSpontNu,rnmSpNu)
-			!spNu = SpontaneousNu(rnmSpNu)
 
 			ntrntime(1,1,nidx+1:nidx+spNu) = tsp
-
-			!print *, nidx+1, nidx+spNu
 		
 			nidx = nidx + spNu 
 			t0 = tsp
 
 		endif
 
-		!if ( nidx .lt. 0 ) exit
-
-		!if ( ( lfission .eq. 0_R8 ) .and. (ICNtrnFlag .ne. 0 ) ) exit
+		if ( ( nidx .eq. 0 ) .and. ( fissflag .ne. 1 ) ) exit
 
 		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		
 		ntrntime(1,2,i) = ntrntime(1,1,i) + TimeInteract(ntrntime(1,1,i))
 
-		!print *, nidx
+		rnmLeak = rang()
 
-		if (rang() .le. Pfiss) then
+		if ( rnmLeak .le. Pleakage ) then
 
-			rnmN = rang()
-			rnmG = rang()
+			cycle
 
-			!nu = NtrnMultNew(rnmN)
-			!mu = GammaMultNew(rnmG)
+		else
 
-			nu = NtrnMult(ntrnl,CumNu,rnmN)
-			mu = GammaMult(gammal,CumMu,rnmG)
+			if (rang() .le. Pfiss) then
 
-			write( 3, * ), nu
-			write( 4, * ), mu
-			!print *, CumNu
-			!print *, rnmN
-			!print *
-			!print *, "Time of Fission: ", ntrntime(1,2,i)
-			!print *
-			!print *, "Fission neutrons created: ", nu
-			!print *, "Gammas generated:         ", mu
-			!print *, nubar
+				rnmN = rang()
+				rnmG = rang()
 
-			!print *, gidx, gidx+mu-1
+				!nu = NtrnMultNew(rnmN)
+				!mu = GammaMultNew(rnmG)
 
-			ntrntime(1,1,nidx+1:nidx+nu) = ntrntime(1,2,i)
-			gammatime(1,gidx:gidx+mu-1) = ntrntime(1,2,i)
+				nu = NtrnMult(ntrnl,CumNu,rnmN)
+				mu = GammaMult(gammal,CumMu,rnmG)
+
+				write( 3, * ), nu
+				write( 4, * ), mu
+
+				ntrntime(1,1,nidx+1:nidx+nu) = ntrntime(1,2,i)
+				gammatime(1,1,gidx:gidx+mu-1) = ntrntime(1,2,i)
 			
-			nidx = nidx + nu
-			gidx = gidx + mu
+				nidx = nidx + nu
+				gidx = gidx + mu
 
-			if ( nu .eq. 0 ) then
+				if ( nu .eq. 0 ) then
 
-				continue
+					continue
 
-			else
+				else
 
-			!print *, "Gamma index: 		   ", gidx
-			!print *
+				endif
 
 			endif
-			!print *, idx
 
 		endif
 
 		if ( nidx + 1 .gt. branchlens ) exit
 		if ( gidx + 1 .gt. 2*branchlens ) exit
-
-		!rnmSp = rang()
-		!nidx = nidx + 1
-
 
 	enddo
 
@@ -264,7 +238,6 @@ PROGRAM neutrongammachain
 
 		if ( (ntrntime(1,1,i) .ne. 0) .and. (ntrntime(1,2,i) .eq. 0) ) then
 
-			!time(1,2,i) = time(1,1,i) - (1/ltot)*log( rang() )
 			ntrntime(1,2,i) = ntrntime(1,1,i) + TimeInteract(ntrntime(1,1,i))
 
 		endif
@@ -277,9 +250,9 @@ PROGRAM neutrongammachain
 
 	enddo
 
-	do i=1,2*branchlens
+	do i=1,10*branchlens
 
-		write( 2, * ), gammatime(1,i)
+		write( 2, * ), gammatime(1,1,i), gammatime(1,1,i)
 
 	enddo
 
@@ -314,18 +287,18 @@ FUNCTION TimeInteract(t0)
 
 	real(R8) :: t0, TimeInteract
 
-	if ( nu .eq. 1) then
+	!if ( nu .eq. 1) then
 
-	TimeInteract = - (1 / ltot) * log ( rang() )
+	!TimeInteract = - (1 / ltot) * log ( rang() )
 
-	else
+	!else
 
 	!call system_clock(seed)
 	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
 
 	TimeInteract = - (1 / ltot) * log ( rang() )
 
-	endif
+	!endif
 
 END FUNCTION TimeInteract
 
@@ -765,6 +738,8 @@ FUNCTION GammaMult(G,CumMu,rnm)
 
 	enddo
 
+	GammaMult = 2
+
 END FUNCTION GammaMult
 
 FUNCTION SpontNu(S,CumSpontNu,rnm)
@@ -799,7 +774,7 @@ FUNCTION SpontNu(S,CumSpontNu,rnm)
 
 	enddo
 
-	!SpontNu = 1
+	SpontNu = 1
 
 	open( unit = 16, file = 'SpontNuEmit.txt' )
 

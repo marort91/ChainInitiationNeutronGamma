@@ -7,10 +7,10 @@ clc, clear, clf
 
 chains = 1000;
 
-lf = 0.0;
+lf = 0.2;
 lc = 1 - lf;
 ti = 0; tf = 20; 
-N = 10;
+N = 20;
 
 %DO NOT CHANGE ANYTHING ABOVE THIS LINE
 
