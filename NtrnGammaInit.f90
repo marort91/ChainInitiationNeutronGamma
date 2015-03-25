@@ -94,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: ntrnlfission = 0.0
+	real, parameter :: ntrnlfission = 0.1
     real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
     real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
@@ -155,8 +155,8 @@ PROGRAM neutrongammachain
 	
 	t0 = 0
 	
-	ICNtrnFlag = 0
-	fissflag = 1
+	ICNtrnFlag = 1
+	fissflag = 0
 
 	if ( ICNtrnFlag .eq. 1 ) then
 
@@ -346,79 +346,6 @@ FUNCTION SpotaneousSrcTime(t0,rnm)
 	!SpotaneousSrcTime = t0 + tmax
 
 END FUNCTION SpotaneousSrcTime
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-FUNCTION SpontaneousNu(rnm)
-
-	use mcnp_random
-	use mcnp_params
-
-	IMPLICIT NONE
-
-	integer, parameter :: SpontNtrnMax = 8
-	integer :: i
-
-	real(R8) :: rnm, sum 
-	real(R8) :: spontnubar = 0
-	real(R8), dimension( SpontNtrnMax ) :: ProbSpontNu
-	real(R8), dimension( SpontNtrnMax ) :: CumSpontNu
-	integer(I8) :: SpontaneousNu
-
-	open( unit = 12, file = "spontntrn.mult")
-
-	read( unit = 12, FMT = * ) ProbSpontNu
-
-	close( unit = 12 )
-
-	do i=1,SpontNtrnMax
-
-		CumSpontNu(i) = sum + ProbSpontNu(i)
-		sum = CumSpontNu(i)
-
-	enddo
-
-	!print *, CumSpontNu
-
-	do i=1,SpontNtrnMax
-
-		spontnubar = spontnubar + ProbSpontNu(i)*(i-1)
-
-	enddo
-
-	!print *, spontnubar
-
-	do i=1,SpontNtrnMax
-
-		if ( rnm .lt. CumSpontNu(1) ) then
-
-			SpontaneousNu = 0
-
-		else if ( ( rnm .gt. CumSpontNu(i) ) .and. ( rnm .le. CumSpontNu(i+1) ) ) then
-
-			SpontaneousNu = i 
-
-		else if ( rnm .gt. CumSpontNu(SpontNtrnMax) ) then 
-
-			SpontaneousNu = SpontNtrnMax - 1
-
-		else
-
-			continue
-
-		endif
-
-	enddo
-
-	sum = 0
-	spontnubar = 0
-
-	!print *, rnm
-	!print *, SpotaneousNu
-	
-	!SpotaneousNu = 1
-
-END FUNCTION SpontaneousNu
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -5,7 +5,7 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-lfission=0.0
+lfission=0.1
 Pleakage=0.0
 
 sed -i.bak "97s/.*/	real, parameter :: ntrnlfission = $lfission/" NtrnGammaInit.f90
@@ -13,10 +13,10 @@ sed -i.bak "103s/.*/	real, parameter :: ntrnPleakage = $Pleakage/" NtrnGammaInit
 
 #Spontaneous fission source or neutron present initial condition flag
 #If ICNtrnFlag = 0, N(0) = 0, else N(0) = 1
-ICNtrnFlag=0
+ICNtrnFlag=1
 sed -i.bak "158s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
 
-fissflag=1
+fissflag=0
 sed -i.bak "159s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
 branchlens=1000
@@ -28,8 +28,8 @@ gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=10000
-let chain=10000
+let loop=1000
+let chain=1000
 let idx=chain/loop
 
 timeint=20
