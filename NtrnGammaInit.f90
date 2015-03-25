@@ -94,13 +94,21 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: lfission = 0.2
-    real, parameter :: lcapture = 1.0 - lfission
-    real, parameter :: ltot = lfission + lcapture
+	real, parameter :: ntrnlfission = 0.0
+    real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
+    real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
-    real, parameter :: Pcap = lcapture / ltot
-    real, parameter :: Pfiss = lfission / ltot
-	real, parameter :: Pleakage = 0.0
+    real, parameter :: ntrnPcap = ntrnlcapture / ntrnltot
+    real, parameter :: ntrnPfiss = ntrnlfission / ntrnltot
+	real, parameter :: ntrnPleakage = 0.0
+
+	real, parameter :: gammalcapture = 0.0
+	real, parameter :: gammaleakage = 1.0 - gammalcapture
+	real, parameter :: gammaltot = gammalcapture + gammaleakage
+
+	real, parameter :: gammaPcap = gammalcapture / gammaltot
+	real, parameter :: gammaPleak = gammaleakage / gammaltot
+
     integer :: nu, mu, spNu
 
     !Binary Fission Assumption
@@ -114,17 +122,15 @@ PROGRAM neutrongammachain
 	use mcnp_params
 	use mat_params
 
-	IMPLICIT NONE
+	real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu, rnmLeakNtrn
 
-	real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu, rnmLeak
-
-	real(R8) :: t0, tf, TimeInteract, SpotaneousSrcTime, tsp
+	real(R8) :: t0, tf, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
 	integer(I8) :: i, j, NtrnMult, GammaMult, SpontNu
 	integer(I8) :: ICNtrnFlag, fissflag, nidx, gidx
 
 	integer, parameter :: branchlens = 1000
 	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
-	real(R8), dimension(1,2,branchlens*10) :: gammatime = 0
+	real(R8), dimension(1,2,branchlens*5) :: gammatime = 0
 
 	!Experimental implementation of new data reader subroutine and functions
 	integer(I8) :: ntrnl, gammal, spntl
@@ -151,8 +157,6 @@ PROGRAM neutrongammachain
 	
 	ICNtrnFlag = 0
 	fissflag = 1
-
-	!Initialize neutron and gamma indices
 
 	if ( ICNtrnFlag .eq. 1 ) then
 
@@ -187,17 +191,17 @@ PROGRAM neutrongammachain
 
 		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		
-		ntrntime(1,2,i) = ntrntime(1,1,i) + TimeInteract(ntrntime(1,1,i))
+		ntrntime(1,2,i) = ntrntime(1,1,i) + NtrnTimeInteract(ntrntime(1,1,i))
 
-		rnmLeak = rang()
+		rnmLeakNtrn = rang()
 
-		if ( rnmLeak .le. Pleakage ) then
+		if ( rnmLeakNtrn .le. ntrnPleakage ) then
 
 			cycle
 
 		else
 
-			if (rang() .le. Pfiss) then
+			if (rang() .le. ntrnPfiss) then
 
 				rnmN = rang()
 				rnmG = rang()
@@ -230,7 +234,7 @@ PROGRAM neutrongammachain
 		endif
 
 		if ( nidx + 1 .gt. branchlens ) exit
-		if ( gidx + 1 .gt. 2*branchlens ) exit
+		if ( gidx + 1 .gt. 10*branchlens ) exit
 
 	enddo
 
@@ -238,11 +242,21 @@ PROGRAM neutrongammachain
 
 		if ( (ntrntime(1,1,i) .ne. 0) .and. (ntrntime(1,2,i) .eq. 0) ) then
 
-			ntrntime(1,2,i) = ntrntime(1,1,i) + TimeInteract(ntrntime(1,1,i))
+			ntrntime(1,2,i) = ntrntime(1,1,i) + NtrnTimeInteract(ntrntime(1,1,i))
 
 		endif
 
 	enddo
+
+	do i=1,5*branchlens
+
+		if ( (gammatime(1,1,i) .ne. 0 ) .and. ( gammatime(1,2,i) .eq. 0 ) ) then
+
+			gammatime(1,2,i) = gammatime(1,1,i) + GammaTimeInteract(gammatime(1,1,i))
+
+		endif
+
+	enddo	
 
 	do i=1,branchlens
 		
@@ -250,9 +264,9 @@ PROGRAM neutrongammachain
 
 	enddo
 
-	do i=1,10*branchlens
+	do i=1,5*branchlens
 
-		write( 2, * ), gammatime(1,1,i), gammatime(1,1,i)
+		write( 2, * ), gammatime(1,1,i), gammatime(1,2,i)
 
 	enddo
 
@@ -275,7 +289,7 @@ END SUBROUTINE initialize
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-FUNCTION TimeInteract(t0)
+FUNCTION NtrnTimeInteract(t0)
 
 	use mcnp_random
 	use mcnp_params
@@ -283,176 +297,27 @@ FUNCTION TimeInteract(t0)
 
 	IMPLICIT NONE
 
-	!integer, save :: savestate
+	real(R8) :: t0, NtrnTimeInteract
 
-	real(R8) :: t0, TimeInteract
+	NtrnTimeInteract = - (1 / ntrnltot ) * log ( rang() )
 
-	!if ( nu .eq. 1) then
-
-	!TimeInteract = - (1 / ltot) * log ( rang() )
-
-	!else
-
-	!call system_clock(seed)
-	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
-
-	TimeInteract = - (1 / ltot) * log ( rang() )
-
-	!endif
-
-END FUNCTION TimeInteract
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-
-FUNCTION NtrnMultNew(rnmN)
-
-	use mcnp_random
-	use mcnp_params
-
-	IMPLICIT NONE
-
-	integer, parameter :: NtrnMax = 8
-	integer :: i
-
-	real(R8) :: rnm, rnmN
-	real :: sum = 0
-	real :: nubar = 0
-	real, dimension( NtrnMax ) :: ProbNu
-	real, dimension( NtrnMax ) :: CumNu = 0
-	integer(I8) :: NtrnMultNew
-
-	!call system_clock( seed )
-	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
-
-	!ProbNu = (/ 0.2, 0.3, 0.2, 0.1, 0.1, 0.05, 0.05 /)
-
-	open( unit = 10, file = "ntrn.mult" )
-
-	read( unit = 10, FMT = * ) ProbNu
-
-	close( unit = 10 )
-
-	do i=1,NtrnMax
-
-		CumNu(i) = sum + ProbNu(i)
-		sum = CumNu(i)
-
-	enddo
-
-	!print *, "CumNu: ", CumNu
-
-	do i=1,NtrnMax
-
-		nubar = nubar + ProbNu(i)*(i-1)
-
-	enddo
-
-	!print *, nubar
-
-	!print *, rnm
-
-	do i=1,NtrnMax
-
-		if ( rnmN .lt. CumNu(1) ) then
-
-			NtrnMultNew = 0
-
-		else if ( ( rnmN .gt. CumNu(i) ) .and. ( rnmN .le. CumNu(i+1) ) ) then
-
-			NtrnMultNew = i 
-
-		else if ( rnmN .gt. CumNu(NtrnMax) ) then 
-
-			NtrnMultNew = NtrnMax - 1
-
-		else
-
-			continue
-
-		endif
-
-	enddo
-
-	sum = 0
-	nubar = 0
-
-	NtrnMultNew = 2
-
-END FUNCTION NtrnMultNew
+END FUNCTION NtrnTimeInteract
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-FUNCTION GammaMultNew(rnm)
+FUNCTION GammaTimeInteract(t0)
 
 	use mcnp_random
 	use mcnp_params
+	use mat_params
 
 	IMPLICIT NONE
 
-	integer, parameter :: GammaMax = 24
-	integer :: i
+	real(R8) :: t0, GammaTimeInteract
 
-	real(R8) :: rnm
-	real(R8) :: sum = 0
-	real(R8) :: mubar = 0
-	real(R8), dimension( GammaMax ) :: ProbMu
-	real(R8), dimension( GammaMax ) :: CumMu
-	integer(I8) :: GammaMultNew
+	GammaTimeInteract = - (1 / gammaltot ) * log ( rang() )
 
-	!call system_clock( seed )
-	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
-
-	!ProbMu = (/ 0.2, 0.3, 0.2, 0.1, 0.1, 0.05, 0.05 /)
-
-	open( unit = 11, file = "gamma.mult" )
-
-	read( unit = 11, FMT = * ) ProbMu
-
-	close( unit = 11 )
-
-	do i=1,GammaMax
-
-		CumMu(i) = sum + ProbMu(i)
-		sum = CumMu(i)
-
-	enddo
-
-	!print *, "CumMu: ", CumMu
-
-	do i=1,GammaMax
-
-		mubar = mubar + ProbMu(i)*(i-1)
-
-	enddo
-
-	!rnm = rang()
-
-	do i=1,GammaMax
-
-		if ( rnm .lt. CumMu(1) ) then
-
-			GammaMultNew = 0
-
-		else if ( ( rnm .gt. CumMu(i) ) .and. ( rnm .le. CumMu(i+1) ) ) then
-
-			GammaMultNew = i 
-
-		else if ( rnm .gt. CumMu(GammaMax) ) then 
-
-			GammaMultNew = GammaMax - 1
-
-		else
-
-			continue
-
-		endif
-
-	enddo
-
-	sum = 0
-	mubar = 0
-
-END FUNCTION GammaMultNew
+END FUNCTION GammaTimeInteract
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -597,7 +462,7 @@ SUBROUTINE datalens( nlines, glines, spntlines )
 
 	rewind(98)
 
-	open( unit = 99, file = 'spontntrntest.mult', status = 'old', action = 'read' )
+	open( unit = 99, file = 'spontntrn.mult', status = 'old', action = 'read' )
 
 	do
 
@@ -636,7 +501,7 @@ SUBROUTINE CumDistFcnGen( nlines, glines, spntlines, CumNu, CumMu, CumSpontNu )
 
 	open( unit = 97, file = 'ntrn.mult', status = 'old', action = 'read' )
 	open( unit = 98, file = 'gamma.mult', status = 'old', action = 'read' )
-	open( unit = 99, file = 'spontntrntest.mult', status = 'old', action = 'read' )
+	open( unit = 99, file = 'spontntrn.mult', status = 'old', action = 'read' )
 
 
 	read( 97, FMT = * ) ProbNu
@@ -702,7 +567,7 @@ FUNCTION NtrnMult(N,CumNu,rnm)
 
 	enddo
 
-	NtrnMult = 2
+	!NtrnMult = 2
 
 END FUNCTION NtrnMult
 
@@ -738,7 +603,7 @@ FUNCTION GammaMult(G,CumMu,rnm)
 
 	enddo
 
-	GammaMult = 2
+	!GammaMult = 5
 
 END FUNCTION GammaMult
 
@@ -774,7 +639,7 @@ FUNCTION SpontNu(S,CumSpontNu,rnm)
 
 	enddo
 
-	SpontNu = 1
+	!SpontNu = 1
 
 	open( unit = 16, file = 'SpontNuEmit.txt' )
 

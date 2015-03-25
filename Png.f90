@@ -6,9 +6,9 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 1000
+    INTEGER, PARAMETER :: chains = 10000
 	INTEGER, PARAMETER :: neut = 30
-	INTEGER, PARAMETER :: gama = 99
+	INTEGER, PARAMETER :: gama = 199
 
 	INTEGER, DIMENSION(chains,N+1) :: PnData = 0
 	INTEGER, DIMENSION(chains,N+1) :: PgData = 0

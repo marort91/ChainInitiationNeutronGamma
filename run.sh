@@ -5,31 +5,31 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-lfission=0.2
+lfission=0.0
 Pleakage=0.0
 
-sed -i.bak "97s/.*/	real, parameter :: lfission = $lfission/" NtrnGammaInit.f90
-sed -i.bak "103s/.*/	real, parameter :: Pleakage = $Pleakage/" NtrnGammaInit.f90
+sed -i.bak "97s/.*/	real, parameter :: ntrnlfission = $lfission/" NtrnGammaInit.f90
+sed -i.bak "103s/.*/	real, parameter :: ntrnPleakage = $Pleakage/" NtrnGammaInit.f90
 
 #Spontaneous fission source or neutron present initial condition flag
 #If ICNtrnFlag = 0, N(0) = 0, else N(0) = 1
 ICNtrnFlag=0
-sed -i.bak "152s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
+sed -i.bak "158s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
 
 fissflag=1
-sed -i.bak "153s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
+sed -i.bak "159s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
 branchlens=1000
 
-sed -i.bak "125s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
+sed -i.bak "131s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
 sed -i.bak "7s/.*/	INTEGER, PARAMETER :: ntrnlens = $branchlens/" ntrngammadataread.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
 
 # touch test.txt
 
-let loop=1000
-let chain=1000
+let loop=10000
+let chain=10000
 let idx=chain/loop
 
 timeint=20
@@ -126,3 +126,5 @@ echo Probability of Fission: $lfission
 echo Probability of Leakage: $Pleakage
 echo Spontaneous Source Flag: $fissflag
 echo Neutron Pop. Initial Condition: $ICNtrnFlag
+
+tput bel

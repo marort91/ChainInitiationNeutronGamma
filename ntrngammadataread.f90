@@ -5,8 +5,8 @@ PROGRAM ntrngammadataread
 	INTEGER :: i, j, k
 	INTEGER, PARAMETER :: N = 20
 	INTEGER, PARAMETER :: ntrnlens = 1000
-	INTEGER, PARAMETER :: gammalens = 10 * ntrnlens
-	INTEGER, PARAMETER :: chains = 1000
+	INTEGER, PARAMETER :: gammalens = 5 * ntrnlens
+	INTEGER, PARAMETER :: chains = 10000
 
 	REAL, DIMENSION(ntrnlens*chains,2) :: ntrnarr
 	REAL, DIMENSION(gammalens*chains,2) :: gammaarr
@@ -100,7 +100,7 @@ PROGRAM ntrngammadataread
 
 				endif
 
-				if ( gammaarr(i,1) .le. time(j) ) then
+				if ( gammaarr(i,1) .le. time(j) ) then ! .and. ( gammaarr(i,2) .gt. time(j) ) ) then
 
 					gammatal(k,j) = gammatal(k,j) +  1
 
