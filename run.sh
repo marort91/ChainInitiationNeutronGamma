@@ -14,14 +14,14 @@ sed -i.bak "103s/.*/	real, parameter :: ntrnPleakage = $Pleakage/" NtrnGammaInit
 #Spontaneous fission source or neutron present initial condition flag
 #If ICNtrnFlag = 0, N(0) = 0, else N(0) = 1
 ICNtrnFlag=1
-sed -i.bak "171s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
+sed -i.bak "173s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
 
 fissflag=0
-sed -i.bak "172s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
+sed -i.bak "174s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
 branchlens=1000
 
-sed -i.bak "144s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
+sed -i.bak "143s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
 sed -i.bak "7s/.*/	INTEGER, PARAMETER :: ntrnlens = $branchlens/" ntrngammadataread.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
@@ -84,8 +84,8 @@ sed -i.bak "8s/.*/    INTEGER, PARAMETER :: N = $timeint/" Png.f90
 sed -i.bak "9s/.*/    INTEGER, PARAMETER :: chains = $loop/" Png.f90
 
 #gfortran -fopenmp -o ntrngammadatread ntrngammadataread.f90
-gfortran -o ntrngammadatread ntrngammadataread.f90
-./ntrngammadatread
+#gfortran -o ntrngammadatread ntrngammadataread.f90
+#./ntrngammadatread
 
 gfortran -o PNG.out Png.f90
 ./PNG.out

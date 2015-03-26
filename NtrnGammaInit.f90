@@ -94,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: ntrnlfission = 0.0
+	real, parameter :: ntrnlfission = 0.5
     real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
     real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
@@ -118,6 +118,7 @@ END MODULE mat_params
 
 MODULE time_params
 
+	integer, parameter :: loop = 1000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -134,8 +135,6 @@ PROGRAM neutrongammachain
 	!real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
 	real(R8) :: rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
 
-	integer(I8) :: loop = 1
-
 	!real(R8) :: t0, tf, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
 	real(R8) :: t0, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
 	integer(I8) :: i, j, k, NtrnMult, GammaMult, SpontNu, SpontMu
@@ -144,6 +143,9 @@ PROGRAM neutrongammachain
 	integer, parameter :: branchlens = 1000
 	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
 	real(R8), dimension(1,2,branchlens*10) :: gammatime = 0
+
+	integer, dimension(loop,N+1) :: ntrntal = 0
+	integer, dimension(loop,N+1) :: gammatal = 0
 
 	!Experimental implementation of new data reader subroutine and functions
 	integer(I8) :: ntrnl, gammal, spntl, spntgl
@@ -167,7 +169,7 @@ PROGRAM neutrongammachain
 	open( unit = 3, file = "ntrnfissiondata", position = "append", action = "write")
 	open( unit = 4, file = "gammafissiondata", position = "append", action = "write")
 	
-	t0 = 0
+	
 	ICNtrnFlag = 1
 	fissflag = 0
 	spontmuflag = 0
@@ -185,6 +187,12 @@ PROGRAM neutrongammachain
 	!call sleep(3600)
 
 	do k = 1, loop
+
+	print *, k 
+	!seed = 0
+	!call RN_init_problem(k)
+	call system_clock(seed)
+	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 
 	if ( ICNtrnFlag .eq. 1 ) then
 
@@ -306,7 +314,63 @@ PROGRAM neutrongammachain
 
 	enddo
 
+	do i = 1, branchlens
+
+		do j = 1, N+1
+
+			if ( ntrntime(1,1,i) .eq. ntrntime(1,2,i) ) then
+
+					cycle
+
+			endif
+
+			if ( ( ntrntime(1,1,i) .le. time(j) ) .and. ( ntrntime(1,2,i) .gt. time(j) ) ) then
+
+					ntrntal(k,j) = ntrntal(k,j) + 1
+
+			endif
+
+		enddo
+
+	enddo
+
+	do i = 1, branchlens*10
+
+		do j = 1, N+1
+
+				if ( gammatime(i,i,1) .eq. 0 ) then
+
+					cycle
+
+				endif
+
+				if ( gammatime(1,1,i) .le. time(j) ) then ! .and. ( gammaarr(i,2) .gt. time(j) ) ) then
+
+					gammatal(k,j) = gammatal(k,j) +  1
+
+				endif
+
+			enddo
+
+		enddo	
+
+	enddo
+
+	open( unit = 7, file = 'ntrntalarraytest.txt' )
+
+	do k = 1, loop
+
+		write( 7, * ) ntrntal(k,:)
+
 	enddo	
+
+	open( unit = 8, file = 'gammatalarraytest.txt')
+
+	do k = 1, loop
+
+		write( 8, * ) gammatal(k,:)
+
+	enddo
 
 	do i=1,branchlens
 		
@@ -571,7 +635,7 @@ FUNCTION NtrnMult(N,CumNu,rnm)
 
 	enddo
 
-	!NtrnMult = 2
+	NtrnMult = 1
 
 END FUNCTION NtrnMult
 

@@ -59,7 +59,8 @@ PROGRAM Png
 
 	!print *, time
 
-	open( unit = 1, file = "ntrnanalysis.txt" )
+	!open( unit = 1, file = "ntrnanalysis.txt" )
+	open( unit = 1, file = "ntrntalarraytest.txt")
 
 	do i = 1,chains
 
@@ -69,7 +70,10 @@ PROGRAM Png
 
 	close( unit = 1 )
 
-	open( unit = 2, file = "gammanalysis.txt")
+	!call sleep(3600)
+
+	!open( unit = 2, file = "gammanalysis.txt")
+	open( unit = 2, file = "gammatalarraytest.txt")
 
 	do i = 1,chains
 
@@ -78,6 +82,8 @@ PROGRAM Png
 	enddo
 
 	close( unit = 2 )
+
+	!call sleep(3600)
 
 	!print *, PnData
 	!print *, PgData
