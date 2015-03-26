@@ -5,7 +5,7 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-lfission=0.1
+lfission=0.0
 Pleakage=0.0
 
 sed -i.bak "97s/.*/	real, parameter :: ntrnlfission = $lfission/" NtrnGammaInit.f90
@@ -14,14 +14,14 @@ sed -i.bak "103s/.*/	real, parameter :: ntrnPleakage = $Pleakage/" NtrnGammaInit
 #Spontaneous fission source or neutron present initial condition flag
 #If ICNtrnFlag = 0, N(0) = 0, else N(0) = 1
 ICNtrnFlag=1
-sed -i.bak "158s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
+sed -i.bak "171s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
 
 fissflag=0
-sed -i.bak "159s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
+sed -i.bak "172s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
 branchlens=1000
 
-sed -i.bak "131s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
+sed -i.bak "144s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
 sed -i.bak "7s/.*/	INTEGER, PARAMETER :: ntrnlens = $branchlens/" ntrngammadataread.f90
 
 gfortran -o NtrnGammaInit.out mcnp_random.f90 NtrnGammaInit.f90
@@ -37,7 +37,7 @@ timeint=20
 # Final time value passes to all Fortran subroutines
 tf=20
 
-sed -i.bak "45s/.*/	tf = $tf/" ntrngammadataread.f90
+sed -i.bak "48s/.*/	tf = $tf/" ntrngammadataread.f90
 
 for j in $(seq 1 $idx);
 do
@@ -59,8 +59,10 @@ do
 
 		cat SpontNuEmission.txt >> SpontNuEmiss.txt
 		cat SpontNuEmit.txt >> SpontNuNumber.txt
+		cat SpontMuEmit.txt >> SpontMuNumber.txt
 		rm SpontNuEmission.txt
 		rm SpontNuEmit.txt
+		rm SpontMuEmit.txt
 
 	fi
 	

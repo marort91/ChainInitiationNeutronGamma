@@ -2,7 +2,7 @@
 
 close all
 
-lf = 0.1;
+lf = 0.0;
 lc = 1 - lf;
 
 ProbsN = load('ProbNStats.txt');

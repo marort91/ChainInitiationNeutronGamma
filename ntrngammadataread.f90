@@ -5,7 +5,7 @@ PROGRAM ntrngammadataread
 	INTEGER :: i, j, k
 	INTEGER, PARAMETER :: N = 20
 	INTEGER, PARAMETER :: ntrnlens = 1000
-	INTEGER, PARAMETER :: gammalens = 5 * ntrnlens
+	INTEGER, PARAMETER :: gammalens = 10 * ntrnlens
 	INTEGER, PARAMETER :: chains = 1000
 
 	REAL, DIMENSION(ntrnlens*chains,2) :: ntrnarr
@@ -42,11 +42,8 @@ PROGRAM ntrngammadataread
 	!$OMP END PARALLEL DO
 
 	close( unit = 2 )
-	tf = 20
-	!print *, gammaarr
 
 	!Time Tally Bins
-	tf = 20
 	t0 = 0
 	tf = 20
 
