@@ -6,7 +6,7 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 1000
+    INTEGER, PARAMETER :: chains = 10000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 199
 
@@ -60,7 +60,8 @@ PROGRAM Png
 	!print *, time
 
 	!open( unit = 1, file = "ntrnanalysis.txt" )
-	open( unit = 1, file = "ntrntalarraytest.txt")
+	!open( unit = 1, file = "ntrntalarraytest.txt")
+	open( unit = 1, file = "ntrntal.txt" )
 
 	do i = 1,chains
 
@@ -73,7 +74,8 @@ PROGRAM Png
 	!call sleep(3600)
 
 	!open( unit = 2, file = "gammanalysis.txt")
-	open( unit = 2, file = "gammatalarraytest.txt")
+	!open( unit = 2, file = "gammatalarraytest.txt")
+	open( unit = 2, file = "gammatal.txt" )
 
 	do i = 1,chains
 

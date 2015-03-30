@@ -94,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: ntrnlfission = 0.5
+	real, parameter :: ntrnlfission = 0.0
     real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
     real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
@@ -118,7 +118,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 1000
+	integer, parameter :: loop = 10000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -131,6 +131,7 @@ PROGRAM neutrongammachain
 	use mcnp_params
 	use mat_params
 	use time_params
+	use omp_lib
 
 	!real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
 	real(R8) :: rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
@@ -160,19 +161,16 @@ PROGRAM neutrongammachain
 
 	call CumDistFcnGen(ntrnl, gammal, spntl, spntgl, CumNu, CumMu, CumSpontNu, CumSpontMu)
 
+	!call initialize
+
 	!Initialize MCNP Random Number Generator
-	call system_clock(seed)
-	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
+	!call system_clock(seed)
+	!call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 	
 	open( unit = 1, file = "ntrnlifedata", position = "append", action = "write")
 	open( unit = 2, file = "gammalifedata", position = "append", action = "write")
 	open( unit = 3, file = "ntrnfissiondata", position = "append", action = "write")
 	open( unit = 4, file = "gammafissiondata", position = "append", action = "write")
-	
-	
-	ICNtrnFlag = 1
-	fissflag = 0
-	spontmuflag = 0
 
 	!dt = (tf - t0)/N
 
@@ -182,23 +180,37 @@ PROGRAM neutrongammachain
 
 	enddo
 
+	open( unit = 7, file = 'ntrntal.txt' )
+	open( unit = 8, file = 'gammatal.txt')
+
+	call initialize
+
 	!print *, time
 
 	!call sleep(3600)
-
+	
+	!$OMP PARALLEL DO
 	do k = 1, loop
+
+	ICNtrnFlag = 0
+	fissflag = 1
+	spontmuflag = 0
+
+		!call initialize
+
+		t0 = 0
 
 	print *, k 
 	!seed = 0
 	!call RN_init_problem(k)
-	call system_clock(seed)
-	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
+	!call system_clock(seed)
+	!call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 
 	if ( ICNtrnFlag .eq. 1 ) then
 
 		nidx = 1
 
-		else
+	else
 
 		nidx = 0
 
@@ -208,11 +220,14 @@ PROGRAM neutrongammachain
 
 		gidx = 1
 
-		else
+	else
 
 		gidx = 0
 
 	endif
+
+	!print *, nidx
+	!call sleep(3)
 
 	do i=1,branchlens
 
@@ -227,6 +242,9 @@ PROGRAM neutrongammachain
 			ntrntime(1,1,nidx+1:nidx+spNu) = tsp
 		
 			nidx = nidx + spNu
+
+			!print *, nidx
+			!call sleep(3)
 
 			if ( spontmuflag .eq. 1 ) then
 			
@@ -294,6 +312,9 @@ PROGRAM neutrongammachain
 
 	enddo
 
+	!print *, nidx
+	!call sleep(3)
+
 	do i=1,branchlens
 
 		if ( (ntrntime(1,1,i) .ne. 0) .and. (ntrntime(1,2,i) .eq. 0) ) then
@@ -332,6 +353,9 @@ PROGRAM neutrongammachain
 
 		enddo
 
+		!print *, ntrntal(:,j)
+		!call sleep(3)
+
 	enddo
 
 	do i = 1, branchlens*10
@@ -354,35 +378,52 @@ PROGRAM neutrongammachain
 
 		enddo	
 
-	enddo
+	!enddo
 
-	open( unit = 7, file = 'ntrntalarraytest.txt' )
+	!open( unit = 7, file = 'ntrntalarraytest.txt' )
+	!open( unit = 7, file = 'ntrntal.txt' )
+
+	!do k = 1, loop
+
+		!write( 7, * ) ntrntal(k,:)
+
+	!enddo	
+
+	!open( unit = 8, file = 'gammatalarraytest.txt')
+	!open( unit = 8, file = 'gammatal.txt')
+
+	!do k = 1, loop
+
+		!write( 8, * ) gammatal(k,:)
+
+	!enddo
+
+	ntrntime(:,:,:) = 0
+	gammatime(:,:,:) = 0
+	!ntrntal(:,:) = 0
+	!gammatal(:,:) = 0
+
+	enddo
+	!$OMP END PARALLEL DO
 
 	do k = 1, loop
 
 		write( 7, * ) ntrntal(k,:)
-
-	enddo	
-
-	open( unit = 8, file = 'gammatalarraytest.txt')
-
-	do k = 1, loop
-
 		write( 8, * ) gammatal(k,:)
 
 	enddo
 
-	do i=1,branchlens
+	!do i=1,branchlens
 		
-		write( 1, * ), ntrntime(1,1,i), ntrntime(1,2,i)
+		!write( 1, * ), ntrntime(1,1,i), ntrntime(1,2,i)
 
-	enddo
+	!enddo
 
-	do i=1,10*branchlens
+	!do i=1,10*branchlens
 
-		write( 2, * ), gammatime(1,1,i), gammatime(1,2,i)
+		!write( 2, * ), gammatime(1,1,i), gammatime(1,2,i)
 
-	enddo
+	!enddo
 
 	!open( unit = 17, file = 'ntrnlife.txt')
 
@@ -391,13 +432,19 @@ END PROGRAM neutrongammachain
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE initialize
+!SUBROUTINE initialize(k)
 
 	!use timestmp
 	use mcnp_params
 	use mcnp_random
 
-	!call system_clock(seed)
-	!call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
+	IMPLICIT NONE
+
+	!integer(I8), intent(in) :: k
+
+	call system_clock(seed)
+	!call RN_init_particle(k)
+	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 
 END SUBROUTINE initialize
 
@@ -460,6 +507,24 @@ FUNCTION SpotaneousSrcTime(t0,rnm)
 	!SpotaneousSrcTime = t0 + tmax
 
 END FUNCTION SpotaneousSrcTime
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!FUNCTION RandomNumberInit(k)
+
+!	use mcnp_params
+!	use mcnp_random
+
+!	IMPLICIT NONE
+
+!	integer(I8) :: RandomNumberInit
+!	integer :: k 
+
+!	call system_clock(seed)
+!	call RN_init_problem(k)
+!	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
+
+!END FUNCTION RandomNumberInit
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -635,7 +700,7 @@ FUNCTION NtrnMult(N,CumNu,rnm)
 
 	enddo
 
-	NtrnMult = 1
+	NtrnMult = 2
 
 END FUNCTION NtrnMult
 
@@ -671,7 +736,7 @@ FUNCTION GammaMult(G,CumMu,rnm)
 
 	enddo
 
-	!GammaMult = 5
+	!GammaMult = 2
 
 END FUNCTION GammaMult
 
@@ -707,11 +772,11 @@ FUNCTION SpontNu(S,CumSpontNu,rnm)
 
 	enddo
 
-	!SpontNu = 1
+	SpontNu = 1
 
-	open( unit = 16, file = 'SpontNuEmit.txt' )
+	!open( unit = 16, file = 'SpontNuEmit.txt' )
 
-	write(16,*) SpontNu
+	!write(16,*) SpontNu
 
 END FUNCTION SpontNu
 
