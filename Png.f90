@@ -6,7 +6,7 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 10000
+    INTEGER, PARAMETER :: chains = 100000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 199
 
@@ -15,17 +15,11 @@ PROGRAM Png
 
 	INTEGER, PARAMETER :: mmnt = 4
 
-	!REAL, DIMENSION(neut+1,N+1) :: Pn = 0
-	!REAL, DIMENSION(gama+1,N+1) :: Pg = 0
-
 	REAL, DIMENSION(neut+1,N+1,mmnt+1) :: Pn = 0
 	REAL, DIMENSION(gama+1,N+1,mmnt+1) :: Pg = 0
 
 	REAL :: t0, tf, dt
 	REAL, DIMENSION(N+1) :: time
-
-	!CHARACTER(LEN = 10) :: fid = "PnMmnt"
-	!CHARACTER(LEN = 10) :: file
 
 	CHARACTER(LEN = 6), DIMENSION(mmnt+1) :: fid = 'PnMmnt'
 	CHARACTER(LEN = 6), DIMENSION(mmnt+1) :: fidg = 'PgMmnt'
@@ -39,8 +33,6 @@ PROGRAM Png
 		write(filenum,'(i1)') i-1
 		filename(i) = fid(i)//filenum//'.txt'
 		filenamegamma(i) = fidg(i)//filenum//'.txt'
-		!print *, filename
-		!print *, filenamegamma(i)
 
 	enddo
 
@@ -57,10 +49,6 @@ PROGRAM Png
 
 	enddo
 
-	!print *, time
-
-	!open( unit = 1, file = "ntrnanalysis.txt" )
-	!open( unit = 1, file = "ntrntalarraytest.txt")
 	open( unit = 1, file = "ntrntal.txt" )
 
 	do i = 1,chains
@@ -71,10 +59,6 @@ PROGRAM Png
 
 	close( unit = 1 )
 
-	!call sleep(3600)
-
-	!open( unit = 2, file = "gammanalysis.txt")
-	!open( unit = 2, file = "gammatalarraytest.txt")
 	open( unit = 2, file = "gammatal.txt" )
 
 	do i = 1,chains
@@ -85,13 +69,6 @@ PROGRAM Png
 
 	close( unit = 2 )
 
-	!call sleep(3600)
-
-	!print *, PnData
-	!print *, PgData
-
-	!do mntidx = 1, mmnt+1
-
 	do i = 1, neut+1
 
 		do j = 1, N+1
@@ -100,8 +77,7 @@ PROGRAM Png
 
 				if ( PnData(k,j) .eq. ( i - 1 ) ) then
 
-					Pn(i,j,:) = (Pn(i,j,:) + 1)!*((i-1)**(mntidx-1))
-					!Pn(i,j,mntidx) = Pn(i,j,mntidx) + Pn(i,j,mntidx)*(mntidx**(mntidx-1))
+					Pn(i,j,:) = (Pn(i,j,:) + 1)
 
 				endif
 

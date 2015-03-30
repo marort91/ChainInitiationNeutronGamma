@@ -94,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: ntrnlfission = 0.0
+	real, parameter :: ntrnlfission = 0.3
     real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
     real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
@@ -119,7 +119,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 10000
+	integer, parameter :: loop = 100000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -265,16 +265,16 @@ PROGRAM neutrongammachain
 			!print *, nidx
 			!call sleep(3)
 
-			!if ( spontmuflag .eq. 1 ) then
+			if ( spontmuflag .eq. 1 ) then
 			
-			!	rnmSpMu(k) = rang()
-			!	spMu(k) = SpontMu(spntgl,CumSpontMu,rnmSpMu(k))
+				rnmSpMu(k) = rang()
+				spMu(k) = SpontMu(spntgl,CumSpontMu,rnmSpMu(k))
 
-			!	gammatime(1,1,gidx(k)+1:gidx(k)+spMu,k) = tsp(k)
+				gammatime(1,1,gidx(k)+1:gidx(k)+spMu,k) = tsp(k)
 
-			!	gidx(k) = gidx(k) + spMu(k)
+				gidx(k) = gidx(k) + spMu(k)
 
-			!endif
+			endif
 
 			t0(k) = tsp(k)
 
