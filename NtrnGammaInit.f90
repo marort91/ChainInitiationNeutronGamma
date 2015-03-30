@@ -109,7 +109,8 @@ MODULE mat_params
 	real, parameter :: gammaPcap = gammalcapture / gammaltot
 	real, parameter :: gammaPleak = gammaleakage / gammaltot
 
-    integer :: nu, mu, spNu, spMu
+    !integer :: nu, mu, spNu, spMu
+    integer :: nu, mu
 
     !Binary Fission Assumption
     !integer, parameter :: nu = 2
@@ -134,16 +135,24 @@ PROGRAM neutrongammachain
 	use omp_lib
 
 	!real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
-	real(R8) :: rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
+	!real(R8) :: rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
+	real(R8) :: rnmN, rnmG, rnmLeakNtrn
+	real(R8), dimension(loop) :: rnmSp, rnmSpNu, rnmSpMu
+	integer(I8), dimension(loop) :: spNu, spMu
 
 	!real(R8) :: t0, tf, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
-	real(R8) :: t0, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
+	!real(R8) :: t0, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
+	real(R8) :: NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract
+	real(R8), dimension(:), allocatable :: t0, tsp
 	integer(I8) :: i, j, k, NtrnMult, GammaMult, SpontNu, SpontMu
-	integer(I8) :: ICNtrnFlag, fissflag, spontmuflag, nidx, gidx
-
+	!integer(I8) :: ICNtrnFlag, fissflag, spontmuflag, nidx, gidx
+	integer(I8) :: ICNtrnFlag, fissflag, spontmuflag
+	integer(I8), dimension(:), allocatable :: nidx, gidx
 	integer, parameter :: branchlens = 1000
-	real(R8), dimension(1,2,branchlens) :: ntrntime = 0
-	real(R8), dimension(1,2,branchlens*10) :: gammatime = 0
+	
+	!real(R8), dimension(1,2,branchlens,loop) :: ntrntime = 0
+	!real(R8), dimension(1,2,branchlens*10,loop) :: gammatime = 0
+	real(R8), dimension(:,:,:,:), allocatable :: ntrntime, gammatime
 
 	integer, dimension(loop,N+1) :: ntrntal = 0
 	integer, dimension(loop,N+1) :: gammatal = 0
@@ -158,6 +167,24 @@ PROGRAM neutrongammachain
 	allocate(CumMu(gammal))
 	allocate(CumSpontNu(spntl))
 	allocate(CumSpontMu(spntgl))
+
+	allocate(ntrntime(1,2,branchlens,loop))
+	allocate(gammatime(1,2,10*branchlens,loop))
+
+	allocate(nidx(loop))
+	allocate(gidx(loop))
+
+	allocate(t0(loop))
+	allocate(tsp(loop))
+
+	ntrntime(:,:,:,:) = 0
+	gammatime(:,:,:,:) = 0
+
+	nidx(:) = 0
+	gidx(:) = 0
+
+	t0(:) = 0
+	tsp(:) = 0
 
 	call CumDistFcnGen(ntrnl, gammal, spntl, spntgl, CumNu, CumMu, CumSpontNu, CumSpontMu)
 
@@ -185,47 +212,39 @@ PROGRAM neutrongammachain
 
 	call initialize
 
-	!print *, time
+	ICNtrnFlag = 1
+	fissflag = 0
+	spontmuflag = 0
 
-	!call sleep(3600)
+	if ( ICNtrnFlag .eq. 1 ) then
+
+		nidx(:) = 1
+
+	else
+
+		nidx(:) = 0
+
+	endif
+
+	if ( spontmuflag .eq. 0 ) then
+
+		gidx(:) = 1
+
+	else
+
+		gidx(:) = 0
+
+	endif
 	
 	!$OMP PARALLEL DO
 	do k = 1, loop
-
-	ICNtrnFlag = 0
-	fissflag = 1
-	spontmuflag = 0
-
-		!call initialize
-
-		t0 = 0
 
 	print *, k 
 	!seed = 0
 	!call RN_init_problem(k)
 	!call system_clock(seed)
 	!call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
-
-	if ( ICNtrnFlag .eq. 1 ) then
-
-		nidx = 1
-
-	else
-
-		nidx = 0
-
-	endif
-
-	if ( spontmuflag .eq. 0 ) then
-
-		gidx = 1
-
-	else
-
-		gidx = 0
-
-	endif
-
+	
 	!print *, nidx
 	!call sleep(3)
 
@@ -233,39 +252,39 @@ PROGRAM neutrongammachain
 
 		if ( fissflag .eq. 1 ) then
 
-			rnmSp = rang()
-			tsp = SpotaneousSrcTime(t0,rnmSp)
+			rnmSp(k) = rang()
+			tsp(k) = SpotaneousSrcTime(t0(k),rnmSp(k))
 
-			rnmSpNu = rang()
-			spNu = SpontNu(spntl,CumSpontNu,rnmSpNu)
+			rnmSpNu(k) = rang()
+			spNu(k) = SpontNu(spntl,CumSpontNu,rnmSpNu(k))
 
-			ntrntime(1,1,nidx+1:nidx+spNu) = tsp
+			ntrntime(1,1,nidx(k)+1:nidx(k)+spNu(k),k) = tsp(k)
 		
-			nidx = nidx + spNu
+			nidx(k) = nidx(k) + spNu(k)
 
 			!print *, nidx
 			!call sleep(3)
 
-			if ( spontmuflag .eq. 1 ) then
+			!if ( spontmuflag .eq. 1 ) then
 			
-				rnmSpMu = rang()
-				spMu = SpontMu(spntgl,CumSpontMu,rnmSpMu)
+			!	rnmSpMu(k) = rang()
+			!	spMu(k) = SpontMu(spntgl,CumSpontMu,rnmSpMu(k))
 
-				gammatime(1,1,gidx+1:gidx+spMu) = tsp
+			!	gammatime(1,1,gidx(k)+1:gidx(k)+spMu,k) = tsp(k)
 
-				gidx = gidx + spMu
+			!	gidx(k) = gidx(k) + spMu(k)
 
-			endif
+			!endif
 
-			t0 = tsp
+			t0(k) = tsp(k)
 
 		endif
 
-		if ( ( nidx .eq. 0 ) .and. ( fissflag .ne. 1 ) ) exit
+		if ( ( nidx(k) .eq. 0 ) .and. ( fissflag .ne. 1 ) ) exit
 
-		if ( ( ntrntime(1,1,i).eq.0_R8) .and. ( i.gt.1 ) ) exit
+		if ( ( ntrntime(1,1,i,k).eq.0_R8) .and. ( i.gt.1 ) ) exit
 		
-		ntrntime(1,2,i) = ntrntime(1,1,i) + NtrnTimeInteract(ntrntime(1,1,i))
+		ntrntime(1,2,i,k) = ntrntime(1,1,i,k) + NtrnTimeInteract(ntrntime(1,1,i,k))
 
 		rnmLeakNtrn = rang()
 
@@ -289,11 +308,11 @@ PROGRAM neutrongammachain
 				write( 3, * ), nu
 				write( 4, * ), mu
 
-				ntrntime(1,1,nidx+1:nidx+nu) = ntrntime(1,2,i)
-				gammatime(1,1,gidx:gidx+mu-1) = ntrntime(1,2,i)
+				ntrntime(1,1,nidx(k)+1:nidx(k)+nu,k) = ntrntime(1,2,i,k)
+				gammatime(1,1,gidx(k):gidx(k)+mu-1,k) = ntrntime(1,2,i,k)
 			
-				nidx = nidx + nu
-				gidx = gidx + mu
+				nidx(k) = nidx(k) + nu
+				gidx(k) = gidx(k) + mu
 
 				if ( nu .eq. 0 ) then
 
@@ -307,8 +326,8 @@ PROGRAM neutrongammachain
 
 		endif
 
-		if ( nidx + 1 .gt. branchlens ) exit
-		if ( gidx + 1 .gt. 10*branchlens ) exit
+		if ( nidx(k) + 1 .gt. branchlens ) exit
+		if ( gidx(k) + 1 .gt. 10*branchlens ) exit
 
 	enddo
 
@@ -317,9 +336,9 @@ PROGRAM neutrongammachain
 
 	do i=1,branchlens
 
-		if ( (ntrntime(1,1,i) .ne. 0) .and. (ntrntime(1,2,i) .eq. 0) ) then
+		if ( (ntrntime(1,1,i,k) .ne. 0) .and. (ntrntime(1,2,i,k) .eq. 0) ) then
 
-			ntrntime(1,2,i) = ntrntime(1,1,i) + NtrnTimeInteract(ntrntime(1,1,i))
+			ntrntime(1,2,i,k) = ntrntime(1,1,i,k) + NtrnTimeInteract(ntrntime(1,1,i,k))
 
 		endif
 
@@ -327,9 +346,9 @@ PROGRAM neutrongammachain
 
 	do i=1,10*branchlens
 
-		if ( (gammatime(1,1,i) .ne. 0 ) .and. ( gammatime(1,2,i) .eq. 0 ) ) then
+		if ( (gammatime(1,1,i,k) .ne. 0 ) .and. ( gammatime(1,2,i,k) .eq. 0 ) ) then
 
-			gammatime(1,2,i) = gammatime(1,1,i) + GammaTimeInteract(gammatime(1,1,i))
+			gammatime(1,2,i,k) = gammatime(1,1,i,k) + GammaTimeInteract(gammatime(1,1,i,k))
 
 		endif
 
@@ -339,13 +358,13 @@ PROGRAM neutrongammachain
 
 		do j = 1, N+1
 
-			if ( ntrntime(1,1,i) .eq. ntrntime(1,2,i) ) then
+			if ( ntrntime(1,1,i,k) .eq. ntrntime(1,2,i,k) ) then
 
 					cycle
 
 			endif
 
-			if ( ( ntrntime(1,1,i) .le. time(j) ) .and. ( ntrntime(1,2,i) .gt. time(j) ) ) then
+			if ( ( ntrntime(1,1,i,k) .le. time(j) ) .and. ( ntrntime(1,2,i,k) .gt. time(j) ) ) then
 
 					ntrntal(k,j) = ntrntal(k,j) + 1
 
@@ -362,13 +381,13 @@ PROGRAM neutrongammachain
 
 		do j = 1, N+1
 
-				if ( gammatime(i,i,1) .eq. 0 ) then
+				if ( gammatime(i,i,1,k) .eq. 0 ) then
 
 					cycle
 
 				endif
 
-				if ( gammatime(1,1,i) .le. time(j) ) then ! .and. ( gammaarr(i,2) .gt. time(j) ) ) then
+				if ( gammatime(1,1,i,k) .le. time(j) ) then ! .and. ( gammaarr(i,2) .gt. time(j) ) ) then
 
 					gammatal(k,j) = gammatal(k,j) +  1
 
@@ -398,8 +417,8 @@ PROGRAM neutrongammachain
 
 	!enddo
 
-	ntrntime(:,:,:) = 0
-	gammatime(:,:,:) = 0
+	!ntrntime(:,:,:) = 0
+	!gammatime(:,:,:) = 0
 	!ntrntal(:,:) = 0
 	!gammatal(:,:) = 0
 
