@@ -6,7 +6,7 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 100000
+    INTEGER, PARAMETER :: chains = 10000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 199
 
@@ -88,6 +88,13 @@ PROGRAM Png
 	enddo
 
 	Pn(:,:,:) = Pn(:,:,:)/chains
+
+	!open( unit = 5, file = 'test.txt' )
+	!write( 5,* ) Pn(:,:,:)
+
+	!do k = 1, chains/100
+
+
 
 	do mntidx = 1,mmnt+1
 

@@ -94,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: ntrnlfission = 0.3
+	real, parameter :: ntrnlfission = 0.0
     real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
     real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
@@ -119,7 +119,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 100000
+	integer, parameter :: loop = 10000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -270,7 +270,7 @@ PROGRAM neutrongammachain
 				rnmSpMu(k) = rang()
 				spMu(k) = SpontMu(spntgl,CumSpontMu,rnmSpMu(k))
 
-				gammatime(1,1,gidx(k)+1:gidx(k)+spMu,k) = tsp(k)
+				gammatime(1,1,gidx(k)+1:gidx(k)+spMu(k),k) = tsp(k)
 
 				gidx(k) = gidx(k) + spMu(k)
 
@@ -397,31 +397,6 @@ PROGRAM neutrongammachain
 
 		enddo	
 
-	!enddo
-
-	!open( unit = 7, file = 'ntrntalarraytest.txt' )
-	!open( unit = 7, file = 'ntrntal.txt' )
-
-	!do k = 1, loop
-
-		!write( 7, * ) ntrntal(k,:)
-
-	!enddo	
-
-	!open( unit = 8, file = 'gammatalarraytest.txt')
-	!open( unit = 8, file = 'gammatal.txt')
-
-	!do k = 1, loop
-
-		!write( 8, * ) gammatal(k,:)
-
-	!enddo
-
-	!ntrntime(:,:,:) = 0
-	!gammatime(:,:,:) = 0
-	!ntrntal(:,:) = 0
-	!gammatal(:,:) = 0
-
 	enddo
 	!$OMP END PARALLEL DO
 
@@ -431,20 +406,6 @@ PROGRAM neutrongammachain
 		write( 8, * ) gammatal(k,:)
 
 	enddo
-
-	!do i=1,branchlens
-		
-		!write( 1, * ), ntrntime(1,1,i), ntrntime(1,2,i)
-
-	!enddo
-
-	!do i=1,10*branchlens
-
-		!write( 2, * ), gammatime(1,1,i), gammatime(1,2,i)
-
-	!enddo
-
-	!open( unit = 17, file = 'ntrnlife.txt')
 
 END PROGRAM neutrongammachain
 

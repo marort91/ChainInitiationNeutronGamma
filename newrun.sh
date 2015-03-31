@@ -5,8 +5,8 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-chains=100000
-lfission=0.3
+chains=10000
+lfission=0.0
 Pleakage=0.0
 
 sed -i.bak "122s/.*/	integer, parameter :: loop = $chains/" NtrnGammaInit.f90
