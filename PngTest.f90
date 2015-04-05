@@ -17,11 +17,16 @@ PROGRAM Png
 
 	INTEGER, PARAMETER :: mmnt = 4
 
-	!REAL, DIMENSION(neut+1,N+1,mmnt+1) :: Pn = 0
+	INTEGER :: batchidx = 0
+
 	REAL, DIMENSION(neut+1,N+1,batch) :: Pn = 0
-	!REAL, DIMENSION(gama+1,N+1,mmnt+1) :: Pg = 0
-	REAL, DIMENSION(chains/100,N+1) :: mean = 0
+	REAL, DIMENSION(gama+1,N+1,batch) :: Pg = 0
+	!REAL, DIMENSION(chains/100,N+1) :: mean = 0
 	REAL, DIMENSION(chains*neut,N+1) :: PnMmntData, PgMmntData
+	REAL, DIMENSION(neut,N+1,mmnt+1) :: PnMeans = 0!, PgMeans = 0
+	REAL, DIMENSION(gama,N+1,mmnt+1) :: PgMeans = 0
+	REAL, DIMENSION(batch*neut,N+1,mmnt+1,neut) :: PnMmntMatrix
+	REAL, DIMENSION(batch*gama,N+1,mmnt+1,gama) :: PgMmntMatrix
 
 	REAL :: t0, tf, dt
 	REAL, DIMENSION(N+1) :: time
@@ -74,7 +79,7 @@ PROGRAM Png
 
 	close( unit = 2 )
 
-	open( unit = 3, file = 'ntrnstat.test' )
+	open( unit = 3, file = 'PnMmnt0.txt' )
 
 	do i = 1, batch
 
@@ -106,25 +111,164 @@ PROGRAM Png
 
 	close( unit = 3 )
 
-	open( unit = 4, file = 'ntrnstat.test' )
+	open( unit = 4, file = 'PnMmnt0.txt' )
 
 	do i = 1, batch*neut
 
 		read( unit = 4, FMT = * ) PnMmntData(i,:)
-		!print *, PnMmntData(i,:)
 
 	enddo
 
 	close( unit = 4 )
 
-	for i = 1, mmnt
+	!j = 0
 
-		for j = 1, neut
+	do i = 1, mmnt+1
 
-			k = 
+		!write(filenum,'(i1)') i
+		!filename(i) = fid(i)//filenum//'.txt'
 
-	!print *, batch*neut
+		!open( unit = i+20, file = filename(i) )
 
-	!Implement moments here, save to file names as done before.	
+	do j = 1, neut
+
+		do k = 1, batch
+
+				!write(i+20,*) PnMmntData(j+30*(k-1),:)*(j-1)**(i)
+				PnMmntMatrix(k,:,i,j) = PnMmntData(j+neut*(k-1),:)*(j-1)**(i-1)
+
+			enddo
+
+		enddo
+
+		!close(unit = i+20)
+
+	enddo
+
+	open( unit = 120, file = 'test.file' )
+				
+	do j = 1, neut
+
+		do k = 1, batch
+
+			write(120,*) PnMmntMatrix(k,:,1,j)
+
+			enddo
+
+		enddo
+
+	!enddo	
+
+	close(unit = 120)
+
+
+
+	open( unit = 5, file = 'PgMmnt0.txt' )
+
+	do i = 1, batch
+
+		do j = 1, gama
+
+			do k = 1, N+1
+
+				do l = 1+100*(i-1), 100*i
+
+					if ( PgData(l,k) .eq. (j-1) ) then
+
+						Pg(j,k,i) = Pg(j,k,i) + 1
+
+					endif
+
+				enddo
+
+			enddo
+
+		enddo
+
+		do p = 1, gama
+
+			write(5,*) Pg(p,:,i)/100
+
+		enddo 
+
+	enddo
+
+	close( unit = 5 )
+
+	open( unit = 4, file = 'PgMmnt0.txt')
+
+	do i = 1, batch*gama
+
+		read( unit = 4, FMT = * ) PgMmntData(i,:)
+
+	enddo
+
+	close( unit = 4 )
+
+	! Maybe I can create an 4-D array that will prevent having to read text files back and forth
+
+
+	do i = 1, mmnt+1
+
+		write(filenum,'(i1)') i
+		filename(i) = fidg(i)//filenum//'.txt'
+
+		open( unit = i+20, file = filename(i) )
+
+		do k = 1, batch
+
+			do j = 1, gama
+
+				!write(i+20,*) PgMmntData(j+30*(k-1),:)*(j-1)**(i)
+				PgMmntMatrix(k,:,i,j) = PgMmntData(j+gama*(k-1),:)*(j-1)**(i-1)
+
+			enddo
+
+		enddo
+
+		close(unit = i+20)
+
+	enddo
+
+	open( unit = 121, file = 'testgamma.file' )
+
+	do k = 1, batch
+
+		do j = 1, gama
+
+			write(121,*) PgMmntMatrix(k,:,2,j)
+
+		enddo
+
+	enddo
+
+	!print *, batch
+
+	!Perhaps make 4D to 3D array????s
+
+	do i = 1, 1 !mmnt
+
+		do j = 1, 1 !neut
+
+			do k = j,batch*neut,neut !batch
+
+				!print *, k
+				PnMeans(j,:,i) = PnMeans(j,:,i) +  PnMmntMatrix(j+(k-1)*neut,:,i,j)
+				!print *, PnMeans(j,:,i)
+				!PnMeans(j,:,i) = PnMeans(j,:,i) +  PnMmntMatrix(j+(k-1)*neut,:,i,j)
+
+			enddo
+
+		enddo
+		
+	enddo	
+
+	!print *, k	
+
+	!print *, j+(k-1)*neut
 	
+	!print *, PnMeans(1,:,1)
+
+	!print *, PnMmntMatrix(11,:,1,1)	
+
 END PROGRAM Png
