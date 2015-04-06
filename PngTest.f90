@@ -9,6 +9,7 @@ PROGRAM Png
     INTEGER, PARAMETER :: chains = 10000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 199
+	REAL, PARAMETER :: chain = 10000 
 
 	INTEGER, PARAMETER :: batch = chains/100
 
@@ -21,12 +22,15 @@ PROGRAM Png
 
 	REAL, DIMENSION(neut+1,N+1,batch) :: Pn = 0
 	REAL, DIMENSION(gama+1,N+1,batch) :: Pg = 0
-	!REAL, DIMENSION(chains/100,N+1) :: mean = 0
 	REAL, DIMENSION(chains*neut,N+1) :: PnMmntData, PgMmntData
-	REAL, DIMENSION(neut,N+1,mmnt+1) :: PnMeans = 0!, PgMeans = 0
+	REAL, DIMENSION(neut,N+1,mmnt+1) :: PnMeans = 0 !, PgMeans = 0
 	REAL, DIMENSION(gama,N+1,mmnt+1) :: PgMeans = 0
 	REAL, DIMENSION(batch*neut,N+1,mmnt+1,neut) :: PnMmntMatrix
 	REAL, DIMENSION(batch*gama,N+1,mmnt+1,gama) :: PgMmntMatrix
+	REAL, DIMENSION(batch*neut*(mmnt+1),N+1) :: NeutData
+	REAL, DIMENSION(batch*gama*(mmnt+1),N+1) :: GamaData
+	REAL, DIMENSION(neut,N+1,mmnt+1) :: varneut = 0
+	REAL, DIMENSION(gama,N+1,mmnt+1) :: vargama = 0 
 
 	REAL :: t0, tf, dt
 	REAL, DIMENSION(N+1) :: time
@@ -121,43 +125,35 @@ PROGRAM Png
 
 	close( unit = 4 )
 
-	!j = 0
-
 	do i = 1, mmnt+1
 
-		!write(filenum,'(i1)') i
-		!filename(i) = fid(i)//filenum//'.txt'
+		do j = 1, neut
 
-		!open( unit = i+20, file = filename(i) )
+			do k = 1, batch
 
-	do j = 1, neut
-
-		do k = 1, batch
-
-				!write(i+20,*) PnMmntData(j+30*(k-1),:)*(j-1)**(i)
 				PnMmntMatrix(k,:,i,j) = PnMmntData(j+neut*(k-1),:)*(j-1)**(i-1)
 
 			enddo
 
 		enddo
 
-		!close(unit = i+20)
-
 	enddo
 
-	open( unit = 120, file = 'test.file' )
+	open( unit = 120, file = 'ntrnmoment.data' )
+
+	do i = 1, mmnt+1
 				
-	do j = 1, neut
+		do j = 1, neut
 
-		do k = 1, batch
+			do k = 1, batch
 
-			write(120,*) PnMmntMatrix(k,:,1,j)
+				write(120,*) PnMmntMatrix(k,:,i,j)
 
 			enddo
 
 		enddo
 
-	!enddo	
+	enddo	
 
 	close(unit = 120)
 
@@ -210,65 +206,172 @@ PROGRAM Png
 
 	do i = 1, mmnt+1
 
-		write(filenum,'(i1)') i
-		filename(i) = fidg(i)//filenum//'.txt'
-
-		open( unit = i+20, file = filename(i) )
-
 		do k = 1, batch
 
 			do j = 1, gama
 
-				!write(i+20,*) PgMmntData(j+30*(k-1),:)*(j-1)**(i)
 				PgMmntMatrix(k,:,i,j) = PgMmntData(j+gama*(k-1),:)*(j-1)**(i-1)
 
 			enddo
 
 		enddo
 
-		close(unit = i+20)
-
 	enddo
 
-	open( unit = 121, file = 'testgamma.file' )
+	open( unit = 121, file = 'gammamoment.data' )
 
-	do k = 1, batch
-
+	do i = 1, mmnt + 1
+		
 		do j = 1, gama
 
-			write(121,*) PgMmntMatrix(k,:,2,j)
+			do k = 1, batch
 
-		enddo
-
-	enddo
-
-	!print *, batch
-
-	!Perhaps make 4D to 3D array????s
-
-	do i = 1, 1 !mmnt
-
-		do j = 1, 1 !neut
-
-			do k = j,batch*neut,neut !batch
-
-				!print *, k
-				PnMeans(j,:,i) = PnMeans(j,:,i) +  PnMmntMatrix(j+(k-1)*neut,:,i,j)
-				!print *, PnMeans(j,:,i)
-				!PnMeans(j,:,i) = PnMeans(j,:,i) +  PnMmntMatrix(j+(k-1)*neut,:,i,j)
+				write(121,*) PgMmntMatrix(k,:,i,j)
 
 			enddo
 
 		enddo
+
+	enddo
+
+	close( unit = 121 )	
+
+	open( unit = 120, file = 'ntrnmoment.data' )
+
+	!print *, neut*batch*(mmnt+1)
+	!print *, batch
+
+	do i = 1, neut*batch*(mmnt+1)
+
+		read( unit = 120, FMT = * ) NeutData(i,:)
+
+	enddo
+
+	close( unit = 120 )
+
+	do k = 1, mmnt + 1
+
+		do i = 1, neut
+
+			do j = 1+batch*(i-1)+(k-1)*batch*neut, batch*i+(k-1)*batch*neut
+
+				PnMeans(i,:,k) = PnMeans(i,:,k) + NeutData(j,:)
+
+			enddo
+
+			PnMeans(i,:,k) = PnMeans(i,:,k)/batch
+
+		enddo
+
+	enddo
+
+	open( unit = 17, file = 'ntrnmeanmoment.data')
+
+	do k = 1, mmnt+1
+
+		do i = 1, neut
+
+			write( 17, * ) PnMeans(i,:,k)
+
+		enddo
+
+	enddo
+
+	close( unit = 17 )
+
+	open( unit = 120, file = 'gammamoment.data')
+
+	do i = 1, gama*batch*(mmnt+1)
+
+		read( unit = 120, FMT = * ) GamaData(i,:)
+
+	enddo
+
+	close( unit = 120 )
+
+	do k = 1, mmnt + 1
+
+		do i = 1, gama
+
+			do j = 1 + batch*(i-1)+(k-1)*batch*gama, batch*i+(k-1)*batch*gama
+
+				PgMeans(i,:,k) = PgMeans(i,:,k) + GamaData(j,:)
+
+			enddo
+
+			PgMeans(i,:,k) = PgMeans(i,:,k)/batch
+
+		enddo
 		
-	enddo	
+	enddo
 
-	!print *, k	
+	open( unit = 18, file = 'gammameanmoment.data')
 
-	!print *, j+(k-1)*neut
+	do k = 1, mmnt+1
+
+		do i = 1, gama
+
+			write(18,*) PgMeans(i,:,k)
+
+		enddo
+
+	enddo
+
+	close( unit = 18 )
+
+	do k = 1, mmnt+1
+
+		do i = 1, neut
+
+			do j = 1 + batch*(i-1)+(k-1)*batch*neut, batch*i+(k-1)*batch*neut
+
+				varneut(i,:,k) = varneut(i,:,k) + (NeutData(j,:) - PnMeans(i,:,k))**2
+
+			enddo
+
+			varneut(i,:,k) = (1/sqrt(chain))*sqrt(varneut(i,:,k))
+
+		enddo
 	
-	!print *, PnMeans(1,:,1)
+	enddo
 
-	!print *, PnMmntMatrix(11,:,1,1)	
+	do k = 1, mmnt
+
+		do i = 1, gama
+
+			do j = 1 + batch*(i-1)+(k-1)*batch*gama, batch*i+(k-1)*batch*gama
+
+				vargama(i,:,k) = vargama(i,:,k) + (GamaData(j,:) - PgMeans(i,:,k))**2
+
+			enddo
+			
+			vargama(i,:,k) = (1/sqrt(chain))*sqrt(vargama(i,:,k))
+
+		enddo
+
+	enddo
+	
+	print *, vargama(2,:,1)			
+
+	!print *, varneut(30,:,1)
+
+	!do k = 1, mmnt+1
+
+	!do i = 1+(k-1)*neut*batch, (k-1)*neut*batch + neut
+
+	!	do j = 1+batch*(i-1), batch*i
+
+	!		varneut(i,:) = varneut(i,:) + (NeutData(j,:) - PnMeans(i,:))**2
+
+	!	enddo
+
+	!	varneut(i,:) = (1/sqrt(chain))*sqrt(varneut(i,:))
+
+	!enddo
+
+	!enddo
+
+	!print *, varneut(3,:)
+	!print *, (1/sqrt(chain))*sqrt(varneut(1,:))
 
 END PROGRAM Png
