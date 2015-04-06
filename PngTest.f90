@@ -30,7 +30,9 @@ PROGRAM Png
 	REAL, DIMENSION(batch*neut*(mmnt+1),N+1) :: NeutData
 	REAL, DIMENSION(batch*gama*(mmnt+1),N+1) :: GamaData
 	REAL, DIMENSION(neut,N+1,mmnt+1) :: varneut = 0
-	REAL, DIMENSION(gama,N+1,mmnt+1) :: vargama = 0 
+	REAL, DIMENSION(gama,N+1,mmnt+1) :: vargama = 0
+	REAL, DIMENSION(neut,2*(N+1),mmnt+1) :: PnMeanVar = 0
+	REAL, DIMENSION(gama,2*(N+1),mmnt+1) :: PgMeanVar = 0
 
 	REAL :: t0, tf, dt
 	REAL, DIMENSION(N+1) :: time
@@ -201,9 +203,6 @@ PROGRAM Png
 
 	close( unit = 4 )
 
-	! Maybe I can create an 4-D array that will prevent having to read text files back and forth
-
-
 	do i = 1, mmnt+1
 
 		do k = 1, batch
@@ -335,7 +334,7 @@ PROGRAM Png
 	
 	enddo
 
-	do k = 1, mmnt
+	do k = 1, mmnt+1
 
 		do i = 1, gama
 
@@ -351,27 +350,68 @@ PROGRAM Png
 
 	enddo
 	
-	print *, vargama(2,:,1)			
+	!print *, vargama(5,:,5)
 
-	!print *, varneut(30,:,1)
+	open( unit = 23, file = 'final.txt')
 
-	!do k = 1, mmnt+1
+	do k = 1, mmnt + 1
 
-	!do i = 1+(k-1)*neut*batch, (k-1)*neut*batch + neut
+		do i = 1, neut
 
-	!	do j = 1+batch*(i-1), batch*i
+			do j = 1, N + 1
 
-	!		varneut(i,:) = varneut(i,:) + (NeutData(j,:) - PnMeans(i,:))**2
+				PnMeanVar(i,1+2*(j-1),k) = PnMeans(i,j,k)
+				PnMeanVar(i,2+2*(j-1),k) = varneut(i,j,k)
 
-	!	enddo
+			enddo
 
-	!	varneut(i,:) = (1/sqrt(chain))*sqrt(varneut(i,:))
+		enddo
 
-	!enddo
+	enddo	
 
-	!enddo
+	do k = 1, mmnt + 1
+	
+		do i = 1, gama
 
-	!print *, varneut(3,:)
-	!print *, (1/sqrt(chain))*sqrt(varneut(1,:))
+			do j = 1, N + 1
+
+				PgMeanVar(i,1+2*(j-1),k) = PgMeans(i,j,k)
+				PgMeanVar(i,2+2*(j-1),k) = vargama(i,j,k)
+
+			enddo	
+
+		enddo
+
+	enddo
+
+	do k = 1, mmnt + 1
+
+		open( unit = 50+k, file = filename(k) )
+		print *, filename(k)
+
+		do i = 1, neut
+
+			write( 50+k, * ) PnMeanVar(i,:,k)
+
+		enddo
+
+		close( unit = 50 + k )
+
+	enddo	
+
+	do k = 1, mmnt + 1
+
+		open( unit = 60+k, file = filenamegamma(k) )
+		print *, filenamegamma(k)
+
+		do i = 1, gama
+
+			write( 60+k, * ) PgMeanVar(i,:,k)
+
+		enddo
+
+		close( unit = 60 + k )
+
+	enddo	
 
 END PROGRAM Png
