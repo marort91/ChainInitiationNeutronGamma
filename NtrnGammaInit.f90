@@ -119,7 +119,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 10000
+	integer, parameter :: loop = 100000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -212,8 +212,8 @@ PROGRAM neutrongammachain
 
 	call initialize
 
-	ICNtrnFlag = 1
-	fissflag = 0
+	ICNtrnFlag = 0
+	fissflag = 1
 	spontmuflag = 0
 
 	if ( ICNtrnFlag .eq. 1 ) then
@@ -680,7 +680,7 @@ FUNCTION NtrnMult(N,CumNu,rnm)
 
 	enddo
 
-	NtrnMult = 2
+	!NtrnMult = 2
 
 END FUNCTION NtrnMult
 
@@ -752,7 +752,7 @@ FUNCTION SpontNu(S,CumSpontNu,rnm)
 
 	enddo
 
-	SpontNu = 1
+	!SpontNu = 1
 
 	!open( unit = 16, file = 'SpontNuEmit.txt' )
 

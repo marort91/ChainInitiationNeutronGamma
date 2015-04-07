@@ -5,7 +5,7 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-chains=10000
+chains=100000
 lfission=0.0
 Pleakage=0.0
 
@@ -15,10 +15,10 @@ sed -i.bak "103s/.*/	real, parameter :: ntrnPleakage = $Pleakage/" NtrnGammaInit
 
 #Spontaneous fission source or neutron present initial condition flag
 #If ICNtrnFlag = 0, N(0) = 0, else N(0) = 1
-ICNtrnFlag=1
+ICNtrnFlag=0
 sed -i.bak "215s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
 
-fissflag=0
+fissflag=1
 sed -i.bak "216s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
 branchlens=1000
@@ -75,10 +75,16 @@ timeint=20
 
 #done
 
-sed -i.bak "8s/.*/    INTEGER, PARAMETER :: N = $timeint/" Png.f90
-sed -i.bak "9s/.*/    INTEGER, PARAMETER :: chains = $chains/" Png.f90
+#sed -i.bak "8s/.*/    INTEGER, PARAMETER :: N = $timeint/" Png.f90
+#sed -i.bak "9s/.*/    INTEGER, PARAMETER :: chains = $chains/" Png.f90
+#sed -i.bak "12s/.*/	REAL, PARAMETER :: chain = $chains/" PngTest.f90
 
-gfortran -o PNG.out Png.f90
+sed -i.bak "8s/.*/    INTEGER, PARAMETER :: N = $timeint/" PngTest.f90
+sed -i.bak "9s/.*/    INTEGER, PARAMETER :: chains = $chains/" PngTest.f90
+sed -i.bak "12s/.*/		REAL, PARAMETER :: chain = $chains/" PngTest.f90
+
+#gfortran -o PNG.out Png.f90
+gfortran -o PNG.out PngTest.f90
 ./PNG.out
 
 rm *.mod

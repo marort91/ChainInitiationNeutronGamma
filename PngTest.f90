@@ -6,15 +6,17 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 10000
+    INTEGER, PARAMETER :: chains = 100000
 	INTEGER, PARAMETER :: neut = 30
 	INTEGER, PARAMETER :: gama = 199
-	REAL, PARAMETER :: chain = 10000 
+		REAL, PARAMETER :: chain = 100000
 
 	INTEGER, PARAMETER :: batch = chains/100
 
-	INTEGER, DIMENSION(chains,N+1) :: PnData = 0
-	INTEGER, DIMENSION(chains,N+1) :: PgData = 0
+	!INTEGER, DIMENSION(chains,N+1) :: PnData = 0
+	!INTEGER, DIMENSION(chains,N+1) :: PgData = 0
+	INTEGER, DIMENSION(:,:), ALLOCATABLE :: PnData
+	INTEGER, DIMENSION(:,:), ALLOCATABLE :: PgData
 
 	INTEGER, PARAMETER :: mmnt = 4
 
@@ -22,11 +24,14 @@ PROGRAM Png
 
 	REAL, DIMENSION(neut+1,N+1,batch) :: Pn = 0
 	REAL, DIMENSION(gama+1,N+1,batch) :: Pg = 0
-	REAL, DIMENSION(chains*neut,N+1) :: PnMmntData, PgMmntData
+	REAL, DIMENSION(chains*neut,N+1) :: PnMmntData
+	REAL, DIMENSION(chains*gama,N+1) :: PgMmntData
 	REAL, DIMENSION(neut,N+1,mmnt+1) :: PnMeans = 0 !, PgMeans = 0
 	REAL, DIMENSION(gama,N+1,mmnt+1) :: PgMeans = 0
-	REAL, DIMENSION(batch*neut,N+1,mmnt+1,neut) :: PnMmntMatrix
-	REAL, DIMENSION(batch*gama,N+1,mmnt+1,gama) :: PgMmntMatrix
+	!REAL, DIMENSION(batch*neut,N+1,mmnt+1,neut) :: PnMmntMatrix
+	!REAL, DIMENSION(batch*gama,N+1,mmnt+1,gama) :: PgMmntMatrix
+	REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: PnMmntMatrix
+	REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: PgMmntMatrix
 	REAL, DIMENSION(batch*neut*(mmnt+1),N+1) :: NeutData
 	REAL, DIMENSION(batch*gama*(mmnt+1),N+1) :: GamaData
 	REAL, DIMENSION(neut,N+1,mmnt+1) :: varneut = 0
@@ -42,6 +47,11 @@ PROGRAM Png
 	CHARACTER(LEN = 25), DIMENSION(mmnt+1) :: filename, filenamegamma
 	CHARACTER(LEN = 1) :: filenum
 
+	allocate(PnData(chains,N+1))
+	allocate(PgData(chains,N+1))
+	allocate(PnMmntMatrix(batch*neut,N+1,mmnt+1,neut))
+	allocate(PgMmntMatrix(batch*gama,N+1,mmnt+1,gama))
+
 	!Initializing file names
 
 	do i = 1,mmnt+1
@@ -56,8 +66,6 @@ PROGRAM Png
 	t0 = 0
 
 	dt = (tf-t0)/N
-
-	!print *, 0**0
 
 	do i = 1,N+1
 
@@ -387,7 +395,7 @@ PROGRAM Png
 	do k = 1, mmnt + 1
 
 		open( unit = 50+k, file = filename(k) )
-		print *, filename(k)
+		!print *, filename(k)
 
 		do i = 1, neut
 
@@ -402,7 +410,7 @@ PROGRAM Png
 	do k = 1, mmnt + 1
 
 		open( unit = 60+k, file = filenamegamma(k) )
-		print *, filenamegamma(k)
+		!print *, filenamegamma(k)
 
 		do i = 1, gama
 
