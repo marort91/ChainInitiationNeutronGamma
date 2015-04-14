@@ -109,17 +109,13 @@ MODULE mat_params
 	real, parameter :: gammaPcap = gammalcapture / gammaltot
 	real, parameter :: gammaPleak = gammaleakage / gammaltot
 
-    !integer :: nu, mu, spNu, spMu
     integer :: nu, mu
-
-    !Binary Fission Assumption
-    !integer, parameter :: nu = 2
 
 END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 100000
+	integer, parameter :: loop = 1000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -134,30 +130,22 @@ PROGRAM neutrongammachain
 	use time_params
 	use omp_lib
 
-	!real(R8) :: dt, rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
-	!real(R8) :: rnmN, rnmG, rnmSp, rnmSpNu, rnmSpMu, rnmLeakNtrn
 	real(R8) :: rnmN, rnmG, rnmLeakNtrn
 	real(R8), dimension(loop) :: rnmSp, rnmSpNu, rnmSpMu
 	integer(I8), dimension(loop) :: spNu, spMu
 
-	!real(R8) :: t0, tf, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
-	!real(R8) :: t0, NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract,tsp
 	real(R8) :: NtrnTimeInteract, SpotaneousSrcTime, GammaTimeInteract
 	real(R8), dimension(:), allocatable :: t0, tsp
 	integer(I8) :: i, j, k, NtrnMult, GammaMult, SpontNu, SpontMu
-	!integer(I8) :: ICNtrnFlag, fissflag, spontmuflag, nidx, gidx
 	integer(I8) :: ICNtrnFlag, fissflag, spontmuflag
 	integer(I8), dimension(:), allocatable :: nidx, gidx
 	integer, parameter :: branchlens = 1000
 	
-	!real(R8), dimension(1,2,branchlens,loop) :: ntrntime = 0
-	!real(R8), dimension(1,2,branchlens*10,loop) :: gammatime = 0
 	real(R8), dimension(:,:,:,:), allocatable :: ntrntime, gammatime
 
 	integer, dimension(loop,N+1) :: ntrntal = 0
 	integer, dimension(loop,N+1) :: gammatal = 0
 
-	!Experimental implementation of new data reader subroutine and functions
 	integer(I8) :: ntrnl, gammal, spntl, spntgl
 	real(R8), dimension(:), allocatable :: CumNu, CumMu, CumSpontNu, CumSpontMu
 
@@ -187,12 +175,6 @@ PROGRAM neutrongammachain
 	tsp(:) = 0
 
 	call CumDistFcnGen(ntrnl, gammal, spntl, spntgl, CumNu, CumMu, CumSpontNu, CumSpontMu)
-
-	!call initialize
-
-	!Initialize MCNP Random Number Generator
-	!call system_clock(seed)
-	!call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 	
 	open( unit = 1, file = "ntrnlifedata", position = "append", action = "write")
 	open( unit = 2, file = "gammalifedata", position = "append", action = "write")
@@ -231,7 +213,7 @@ PROGRAM neutrongammachain
 		gidx(:) = 1
 
 	else
-
+		
 		gidx(:) = 0
 
 	endif
@@ -240,13 +222,6 @@ PROGRAM neutrongammachain
 	do k = 1, loop
 
 	print *, k 
-	!seed = 0
-	!call RN_init_problem(k)
-	!call system_clock(seed)
-	!call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
-	
-	!print *, nidx
-	!call sleep(3)
 
 	do i=1,branchlens
 
@@ -261,9 +236,6 @@ PROGRAM neutrongammachain
 			ntrntime(1,1,nidx(k)+1:nidx(k)+spNu(k),k) = tsp(k)
 		
 			nidx(k) = nidx(k) + spNu(k)
-
-			!print *, nidx
-			!call sleep(3)
 
 			if ( spontmuflag .eq. 1 ) then
 			
@@ -299,9 +271,6 @@ PROGRAM neutrongammachain
 				rnmN = rang()
 				rnmG = rang()
 
-				!nu = NtrnMultNew(rnmN)
-				!mu = GammaMultNew(rnmG)
-
 				nu = NtrnMult(ntrnl,CumNu,rnmN)
 				mu = GammaMult(gammal,CumMu,rnmG)
 
@@ -330,9 +299,6 @@ PROGRAM neutrongammachain
 		if ( gidx(k) + 1 .gt. 10*branchlens ) exit
 
 	enddo
-
-	!print *, nidx
-	!call sleep(3)
 
 	do i=1,branchlens
 
@@ -372,9 +338,6 @@ PROGRAM neutrongammachain
 
 		enddo
 
-		!print *, ntrntal(:,j)
-		!call sleep(3)
-
 	enddo
 
 	do i = 1, branchlens*10
@@ -412,18 +375,13 @@ END PROGRAM neutrongammachain
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 SUBROUTINE initialize
-!SUBROUTINE initialize(k)
 
-	!use timestmp
 	use mcnp_params
 	use mcnp_random
 
 	IMPLICIT NONE
 
-	!integer(I8), intent(in) :: k
-
 	call system_clock(seed)
-	!call RN_init_particle(k)
 	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
 
 END SUBROUTINE initialize
@@ -469,42 +427,18 @@ FUNCTION SpotaneousSrcTime(t0,rnm)
 
 	IMPLICIT NONE
 
-	real(R8), parameter :: S = 1
+	real(R8), parameter :: S = 1 !1
 	real(R8), parameter :: tmax = 2
 
 	real(R8) :: rnm, t0, SpotaneousSrcTime
 
-	!call system_clock( seed )
-	!call RN_init_problem( 1, seed, 0_I8, 0_I8, 0 )
-
-	!rnm = rang()
-
 	open( unit = 15, file = 'SpontNuEmission.txt' )
 
-	!write(15,*) tmax/2 !rnm/S*tmax !*2
+	SpotaneousSrcTime = t0 + rnm / S * tmax
 
-	SpotaneousSrcTime = t0 + rnm / S * tmax ! *2
-	!SpotaneousSrcTime = t0 + tmax
+	!write(15,*) rnm / S * tmax
 
 END FUNCTION SpotaneousSrcTime
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!FUNCTION RandomNumberInit(k)
-
-!	use mcnp_params
-!	use mcnp_random
-
-!	IMPLICIT NONE
-
-!	integer(I8) :: RandomNumberInit
-!	integer :: k 
-
-!	call system_clock(seed)
-!	call RN_init_problem(k)
-!	call RN_init_problem( 2, seed, 0_I8, 0_I8, 1 )
-
-!END FUNCTION RandomNumberInit
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -584,6 +518,8 @@ SUBROUTINE datalens( nlines, glines, spntlines, spntglines )
 
 END SUBROUTINE datalens
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 SUBROUTINE CumDistFcnGen( nlines, glines, spntlines, spntglines, CumNu, CumMu, CumSpontNu, CumSpontMu )
 
 	use mcnp_params
@@ -648,6 +584,8 @@ SUBROUTINE CumDistFcnGen( nlines, glines, spntlines, spntglines, CumNu, CumMu, C
 
 END SUBROUTINE CumDistFcnGen
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 FUNCTION NtrnMult(N,CumNu,rnm)
 
 	use mcnp_params
@@ -683,6 +621,8 @@ FUNCTION NtrnMult(N,CumNu,rnm)
 	!NtrnMult = 2
 
 END FUNCTION NtrnMult
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 FUNCTION GammaMult(G,CumMu,rnm)
 
@@ -720,6 +660,8 @@ FUNCTION GammaMult(G,CumMu,rnm)
 
 END FUNCTION GammaMult
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 FUNCTION SpontNu(S,CumSpontNu,rnm)
 
 	use mcnp_params
@@ -754,11 +696,13 @@ FUNCTION SpontNu(S,CumSpontNu,rnm)
 
 	!SpontNu = 1
 
-	!open( unit = 16, file = 'SpontNuEmit.txt' )
+	open( unit = 16, file = 'SpontNuEmit.txt' )
 
-	!write(16,*) SpontNu
+	write(16,*) SpontNu
 
 END FUNCTION SpontNu
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 FUNCTION SpontMu(S,CumSpontMu,rnm)
 
@@ -796,44 +740,3 @@ FUNCTION SpontMu(S,CumSpontMu,rnm)
 	write(13,*) SpontMu
 
 END FUNCTION SpontMu	
-
-!!! SpontMu !!! Implement now!
-
-!SUBROUTINE SpontNu(rnm,t0,time,SpontNu)
-
-!	use mcnp_random
-!	use mcnp_params
-
-!	IMPLICIT NONE
-
-!	real, intent(IN) :: rnm, t0
-!	real, intent(OUT) :: time
-!	integer, intent(OUT) :: SpontNu
-
-!	integer, parameter :: S = 1
-!	real, parameter :: tmax = 1
-
-!	SpontNu = 1
-
-!	time = t0 + rnm * S * tmax
-
-!END SUBROUTINE SpotaneousSrc
-
-!SUBROUTINE NtrnGammaDataMult(CumNu,CumMu)
-
-!	IMPLICIT NONE
-
-!	real, dimension(:), intent(out), allocatable :: CumNu, CumMu
-!	integer :: lensntrn, lensgamma
-
-!	open( unit = 98, file = 'ntrn.mult', status = 'old', action = 'read' )
-!	open( unit = 99, file = 'gamma.mult', status = 'old', action = 'read' )
-
-!	read( 98, * ), lensntrn
-!	read( 99, * ), lensgamma
-
-!	allocate( CumNu (lensntrn) ) 
-!	allocate( CumMu (lensgamma) )
-
-!END SUBROUTINE
-

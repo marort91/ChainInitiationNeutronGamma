@@ -6,10 +6,10 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 100000
-	INTEGER, PARAMETER :: neut = 30
+    INTEGER, PARAMETER :: chains = 1000
+	INTEGER, PARAMETER :: neut = 60
 	INTEGER, PARAMETER :: gama = 199
-		REAL, PARAMETER :: chain = 100000
+	 REAL, PARAMETER :: chain = 1000
 
 	INTEGER, PARAMETER :: batch = chains/100
 
@@ -24,16 +24,18 @@ PROGRAM Png
 
 	REAL, DIMENSION(neut+1,N+1,batch) :: Pn = 0
 	REAL, DIMENSION(gama+1,N+1,batch) :: Pg = 0
-	REAL, DIMENSION(chains*neut,N+1) :: PnMmntData
-	REAL, DIMENSION(chains*gama,N+1) :: PgMmntData
+	!REAL, DIMENSION(chains*neut,N+1) :: PnMmntData
+	!REAL, DIMENSION(chains*gama,N+1) :: PgMmntData
+	REAL, DIMENSION(:,:), ALLOCATABLE :: PnMmntData, PgMmntData
 	REAL, DIMENSION(neut,N+1,mmnt+1) :: PnMeans = 0 !, PgMeans = 0
 	REAL, DIMENSION(gama,N+1,mmnt+1) :: PgMeans = 0
 	!REAL, DIMENSION(batch*neut,N+1,mmnt+1,neut) :: PnMmntMatrix
 	!REAL, DIMENSION(batch*gama,N+1,mmnt+1,gama) :: PgMmntMatrix
 	REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: PnMmntMatrix
 	REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: PgMmntMatrix
-	REAL, DIMENSION(batch*neut*(mmnt+1),N+1) :: NeutData
-	REAL, DIMENSION(batch*gama*(mmnt+1),N+1) :: GamaData
+	!REAL, DIMENSION(batch*neut*(mmnt+1),N+1) :: NeutData
+	!REAL, DIMENSION(batch*gama*(mmnt+1),N+1) :: GamaData
+	REAL, DIMENSION(:,:), ALLOCATABLE :: NeutData, GamaData
 	REAL, DIMENSION(neut,N+1,mmnt+1) :: varneut = 0
 	REAL, DIMENSION(gama,N+1,mmnt+1) :: vargama = 0
 	REAL, DIMENSION(neut,2*(N+1),mmnt+1) :: PnMeanVar = 0
@@ -51,14 +53,18 @@ PROGRAM Png
 	allocate(PgData(chains,N+1))
 	allocate(PnMmntMatrix(batch*neut,N+1,mmnt+1,neut))
 	allocate(PgMmntMatrix(batch*gama,N+1,mmnt+1,gama))
+	allocate(PnMmntData(neut*chains,N+1))
+	allocate(PgMmntData(gama*chains,N+1))
+	allocate(NeutData(batch*neut*(mmnt+1),N+1))
+	allocate(GamaData(batch*gama*(mmnt+1),N+1))
 
 	!Initializing file names
 
 	do i = 1,mmnt+1
 
 		write(filenum,'(i1)') i-1
-		filename(i) = fid(i)//filenum//'.txt'
-		filenamegamma(i) = fidg(i)//filenum//'.txt'
+		filename(i) = fid(i)//filenum//'.mmnt'
+		filenamegamma(i) = fidg(i)//filenum//'.mmnt'
 
 	enddo
 
@@ -336,7 +342,9 @@ PROGRAM Png
 
 			enddo
 
-			varneut(i,:,k) = (1/sqrt(chain))*sqrt(varneut(i,:,k))
+			varneut(i,:,k) = varneut(i,:,k)/(real(batch)-1)
+			varneut(i,:,k) = 2*sqrt(varneut(i,:,k))/sqrt(real(batch))
+			!varneut(i,:,k) = (1/sqrt(real(batch)))*sqrt(varneut(i,:,k))!/real(batch))
 
 		enddo
 	
@@ -352,7 +360,7 @@ PROGRAM Png
 
 			enddo
 			
-			vargama(i,:,k) = (1/sqrt(chain))*sqrt(vargama(i,:,k))
+			vargama(i,:,k) = (1/sqrt(real(batch)))*sqrt(vargama(i,:,k))!/real(batch))
 
 		enddo
 
@@ -421,5 +429,7 @@ PROGRAM Png
 		close( unit = 60 + k )
 
 	enddo	
+
+	print *, batch
 
 END PROGRAM Png
