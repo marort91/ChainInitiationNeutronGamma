@@ -115,7 +115,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 1000
+	integer, parameter :: loop = 10000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -694,7 +694,7 @@ FUNCTION SpontNu(S,CumSpontNu,rnm)
 
 	enddo
 
-	!SpontNu = 1
+	SpontNu = 1
 
 	open( unit = 16, file = 'SpontNuEmit.txt' )
 

@@ -5,7 +5,7 @@ clear
 rm *.txt
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-chains=1000
+chains=10000
 lfission=0.0
 Pleakage=0.0
 
