@@ -115,7 +115,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 10000
+	integer, parameter :: loop = 1
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -139,7 +139,7 @@ PROGRAM neutrongammachain
 	integer(I8) :: i, j, k, NtrnMult, GammaMult, SpontNu, SpontMu
 	integer(I8) :: ICNtrnFlag, fissflag, spontmuflag
 	integer(I8), dimension(:), allocatable :: nidx, gidx
-	integer, parameter :: branchlens = 1000
+	integer, parameter :: branchlens = 50
 	
 	real(R8), dimension(:,:,:,:), allocatable :: ntrntime, gammatime
 
@@ -186,6 +186,7 @@ PROGRAM neutrongammachain
 	do i = 1,N+1
 
 		time(i) = ti + (i-1)*dt
+		print *, time(i)
 
 	enddo
 
@@ -193,8 +194,8 @@ PROGRAM neutrongammachain
 	open( unit = 8, file = 'gammatal.txt')
 
 	call initialize
-
 	ICNtrnFlag = 0
+	fissflag = 1
 	fissflag = 1
 	spontmuflag = 0
 
@@ -225,7 +226,7 @@ PROGRAM neutrongammachain
 
 	do i=1,branchlens
 
-		if ( fissflag .eq. 1 ) then
+			if ( fissflag .eq. 1 ) then
 
 			rnmSp(k) = rang()
 			tsp(k) = SpotaneousSrcTime(t0(k),rnmSp(k))
@@ -249,6 +250,7 @@ PROGRAM neutrongammachain
 			endif
 
 			t0(k) = tsp(k)
+			print *, t0(k)
 
 		endif
 
@@ -309,6 +311,14 @@ PROGRAM neutrongammachain
 		endif
 
 	enddo
+
+	!do k = 1, loop
+	do i = 1, branchlens
+
+		write(1,*) ntrntime(1,:,i,k)
+
+	enddo
+	!enddo
 
 	do i=1,10*branchlens
 

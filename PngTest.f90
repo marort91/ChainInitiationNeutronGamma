@@ -6,10 +6,10 @@ PROGRAM Png
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
     INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 10000
+    INTEGER, PARAMETER :: chains = 1
 	INTEGER, PARAMETER :: neut = 60
 	INTEGER, PARAMETER :: gama = 199
-	 REAL, PARAMETER :: chain = 10000
+	 REAL, PARAMETER :: chain = 1
 
 	INTEGER, PARAMETER :: batch = chains/100
 

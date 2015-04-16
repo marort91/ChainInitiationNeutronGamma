@@ -3,9 +3,10 @@
 clear
 
 rm *.txt
+rm ntrnlifedata
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-chains=10000
+chains=1
 lfission=0.0
 Pleakage=0.0
 
@@ -21,7 +22,7 @@ sed -i.bak "197s/.*/	ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
 fissflag=1
 sed -i.bak "198s/.*/	fissflag = $fissflag/" NtrnGammaInit.f90
 
-branchlens=1000
+branchlens=50
 
 sed -i.bak "142s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
 #sed -i.bak "7s/.*/	INTEGER, PARAMETER :: ntrnlens = $branchlens/" ntrngammadataread.f90
