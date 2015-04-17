@@ -5,36 +5,30 @@ PROGRAM Png
 	INTEGER :: i, j, k, mntidx, l, m, p, o
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
-    INTEGER, PARAMETER :: N = 25
-    INTEGER, PARAMETER :: chains = 10000
+    INTEGER, PARAMETER :: N = 20
+    INTEGER, PARAMETER :: chains = 20000
 	INTEGER, PARAMETER :: neut = 60
 	INTEGER, PARAMETER :: gama = 199
-	 REAL, PARAMETER :: chain = 10000
+	INTEGER, PARAMETER :: batchint = 100
+	!REAL, PARAMETER :: chain = 20000
 
-	INTEGER, PARAMETER :: batch = chains/100
+	INTEGER, PARAMETER :: batch = chains/batchint
 
-	!INTEGER, DIMENSION(chains,N+1) :: PnData = 0
-	!INTEGER, DIMENSION(chains,N+1) :: PgData = 0
 	INTEGER, DIMENSION(:,:), ALLOCATABLE :: PnData
 	INTEGER, DIMENSION(:,:), ALLOCATABLE :: PgData
 
 	INTEGER, PARAMETER :: mmnt = 4
 
-	INTEGER :: batchidx = 0
+	INTEGER :: batchidx = 0, idx = 0
 
-	REAL, DIMENSION(neut+1,N+1,batch) :: Pn = 0
-	REAL, DIMENSION(gama+1,N+1,batch) :: Pg = 0
-	!REAL, DIMENSION(chains*neut,N+1) :: PnMmntData
-	!REAL, DIMENSION(chains*gama,N+1) :: PgMmntData
+	REAL, DIMENSION(neut,N+1,batch) :: Pn = 0
+	REAL, DIMENSION(gama,N+1,batch) :: Pg = 0
 	REAL, DIMENSION(:,:), ALLOCATABLE :: PnMmntData, PgMmntData
 	REAL, DIMENSION(neut,N+1,mmnt+1) :: PnMeans = 0 !, PgMeans = 0
 	REAL, DIMENSION(gama,N+1,mmnt+1) :: PgMeans = 0
-	!REAL, DIMENSION(batch*neut,N+1,mmnt+1,neut) :: PnMmntMatrix
-	!REAL, DIMENSION(batch*gama,N+1,mmnt+1,gama) :: PgMmntMatrix
-	REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: PnMmntMatrix
+	!REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: PnMmntMatrix
+	REAL, DIMENSION(:,:,:), ALLOCATABLE :: PnMmntMatrix
 	REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: PgMmntMatrix
-	!REAL, DIMENSION(batch*neut*(mmnt+1),N+1) :: NeutData
-	!REAL, DIMENSION(batch*gama*(mmnt+1),N+1) :: GamaData
 	REAL, DIMENSION(:,:), ALLOCATABLE :: NeutData, GamaData
 	REAL, DIMENSION(neut,N+1,mmnt+1) :: varneut = 0
 	REAL, DIMENSION(gama,N+1,mmnt+1) :: vargama = 0
@@ -49,9 +43,14 @@ PROGRAM Png
 	CHARACTER(LEN = 25), DIMENSION(mmnt+1) :: filename, filenamegamma
 	CHARACTER(LEN = 1) :: filenum
 
+	print *, "Batch Number: ", batch
+
 	allocate(PnData(chains,N+1))
 	allocate(PgData(chains,N+1))
-	allocate(PnMmntMatrix(batch*neut,N+1,mmnt+1,neut))
+	!allocate(PnMmntMatrix(batch*neut,N+1,mmnt+1,neut))
+
+	allocate(PnMmntMatrix(batch*neut,N+1,mmnt+1))
+
 	allocate(PgMmntMatrix(batch*gama,N+1,mmnt+1,gama))
 	allocate(PnMmntData(neut*chains,N+1))
 	allocate(PgMmntData(gama*chains,N+1))
@@ -68,7 +67,7 @@ PROGRAM Png
 
 	enddo
 
-	tf = 50
+	tf = 20
 	t0 = 0
 
 	dt = (tf-t0)/N
@@ -101,38 +100,90 @@ PROGRAM Png
 
 	open( unit = 3, file = 'PnMmnt0.txt' )
 
+	! This is the fuckup right here...
+
 	do i = 1, batch
 
-		do j = 1, neut
+		do j = 1, 1 !neut
 
-			do k = 1, N+1
+				do k = 1, N + 1
 
-				!do l = 1+100*(i-1), 100*i
-				do l = 1+batch*(i-1), batch*i
+			do l = 1+(i-1)*batchint, batchint*i
 
-					if ( PnData(l,k) .eq. (j-1) ) then
+		
+
+					if (PnData(l,k) .eq. (j - 1) ) then
 
 						Pn(j,k,i) = Pn(j,k,i) + 1
 
 					endif
-
+					
 				enddo
-
+				
 			enddo
-
+		
 		enddo
 
-		do p = 1, neut
+		!print *, Pn(j,:,i)
 
-			write(3,*) Pn(p,:,i)/real(batch)
+		do p = 1, 1 !neut
 
-		enddo 
+			write(3,*) Pn(p,:,i)
 
-	enddo
+		enddo	
+
+		!print *, i 
+
+	enddo					
+
+	call sleep(3600)
+
+	!do i = 1, batch
+
+		!do j = 1, neut
+
+			!do k = 1, N+1
+
+
+
+	!do i = 1, batch
+
+		!print *, 1+batch*(i-1), batch*i
+
+		!do j = 1, neut
+
+			!do k = 1, N+1
+
+				!do l = 1+100*(i-1), 100*i
+				!do l = 1+batch*(i-1), batch*i
+
+					!if ( PnData(l,k) .eq. (j-1) ) then
+
+						!Pn(j,k,i) = Pn(j,k,i) + 1
+
+					!endif
+
+				!enddo
+
+			!enddo
+
+		!enddo
+
+		!do p = 1, neut
+
+			!write(3,*) Pn(p,:,i)/real(batch)
+
+		!enddo 
+
+	!enddo
 
 	close( unit = 3 )
 
+	!call sleep(3600)
+
 	open( unit = 4, file = 'PnMmnt0.txt' )
+
+	!print *, batch*neut
 
 	do i = 1, batch*neut
 
@@ -142,37 +193,68 @@ PROGRAM Png
 
 	close( unit = 4 )
 
-	do i = 1, mmnt+1
+	!print *, PnMmntData(1,:)
 
-		do j = 1, neut
+	!call sleep(3600)
 
-			do k = 1, batch
+	!!! This is where the problem is...
 
-				PnMmntMatrix(k,:,i,j) = PnMmntData(j+neut*(k-1),:)*(j-1)**(i-1)
+	do i = 1, 1 !mmnt + 1
+
+		do j = 1, 1 !neut
+
+			do k = 1+batch*(j-1), batch*j
+
+				!PnMmntMatrix(k+(j-1)*batch,:,i) = PnMmntData(j+neut*(j-1),:)*(j-1)**(i-1)
+				print *, j + neut*(k-1)
+				PnMmntMatrix(k,:,i) = PnMmntData(j+neut*(k-1),:)*(j-1)**(i-1)
 
 			enddo
 
 		enddo
+		
+	enddo		
 
-	enddo
+	!do i = 1, mmnt+1
+
+		!do j = 1, neut
+
+			!do k = 1, batch
+
+				!print *, j + neut*(k-1)
+
+				!PnMmntMatrix(k,:,i,j) = PnMmntData(j+neut*(k-1),:)*(j-1)**(i-1)
+
+			!enddo
+
+		!enddo
+
+	!enddo
+
+	!print *, PnMmntMatrix(101,:,1)
+
+	call sleep(3600)
 
 	open( unit = 120, file = 'ntrnmoment.data' )
 
 	do i = 1, mmnt+1
 				
-		do j = 1, neut
+		!do j = 1, neut
 
-			do k = 1, batch
+			do k = 1, batch*neut
 
-				write(120,*) PnMmntMatrix(k,:,i,j)
+				!write(120,*) PnMmntMatrix(k,:,i,j)
+				!write(120,*) PnMmntMatrix(k,:,i)
 
 			enddo
 
-		enddo
+		!enddo
 
 	enddo	
 
 	close(unit = 120)
+
+	call sleep(3600)
 
 	open( unit = 5, file = 'PgMmnt0.txt' )
 
@@ -247,7 +329,9 @@ PROGRAM Png
 
 	enddo
 
-	close( unit = 121 )	
+	close( unit = 121 )
+
+	!call sleep(3600)
 
 	open( unit = 120, file = 'ntrnmoment.data' )
 
@@ -266,6 +350,8 @@ PROGRAM Png
 
 		do i = 1, neut
 
+			print *, 1+batch*(i-1)+(k-1)*batch*neut, batch*i+(k-1)*batch*neut
+
 			do j = 1+batch*(i-1)+(k-1)*batch*neut, batch*i+(k-1)*batch*neut
 
 				PnMeans(i,:,k) = PnMeans(i,:,k) + NeutData(j,:)
@@ -277,6 +363,10 @@ PROGRAM Png
 		enddo
 
 	enddo
+
+	print *, PnMeans(2,:,1)
+
+	call sleep(3600)
 
 	open( unit = 17, file = 'ntrnmeanmoment.data')
 
@@ -332,9 +422,15 @@ PROGRAM Png
 
 	close( unit = 18 )
 
+
+	print *, "I'm here!!!"
+	!call sleep(3600)
+
 	do k = 1, mmnt+1
 
 		do i = 1, neut
+
+			!print *, 1 + batch*(i-1)+(k-1)*batch*neut, batch*i+(k-1)*batch*neut
 
 			do j = 1 + batch*(i-1)+(k-1)*batch*neut, batch*i+(k-1)*batch*neut
 
@@ -349,6 +445,8 @@ PROGRAM Png
 		enddo
 	
 	enddo
+
+	!call sleep(3600)
 
 	do k = 1, mmnt+1
 
@@ -370,7 +468,7 @@ PROGRAM Png
 	
 	!print *, vargama(5,:,5)
 
-	open( unit = 23, file = 'final.txt')
+	!open( unit = 23, file = 'final.txt')
 
 	do k = 1, mmnt + 1
 

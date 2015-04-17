@@ -94,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: ntrnlfission = 0.01
+	real, parameter :: ntrnlfission = 0.0
     real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
     real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
@@ -115,17 +115,17 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 10000
-	integer, parameter :: N = 25
-	real, parameter :: ti = 0, tf = 50, dt = ( tf - ti ) / N 
+	integer, parameter :: loop = 20000
+	integer, parameter :: N = 20
+	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
 
 END MODULE time_params
 
 MODULE prob_flags
 
-	integer, parameter :: ICNtrnFlag = 0
-	integer, parameter :: fissflag = 1
+	integer, parameter :: ICNtrnFlag = 1
+	integer, parameter :: fissflag = 0
 	integer, parameter :: spontmuflag = 0
 	integer, parameter :: expvaloutcome = 0 
 
