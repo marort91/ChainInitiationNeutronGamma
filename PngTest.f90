@@ -5,11 +5,11 @@ PROGRAM Png
 	INTEGER :: i, j, k, mntidx, l, m, p, o
 	INTEGER, PARAMETER :: ntrnlens = 100
 	INTEGER, PARAMETER :: gammalens = 100
-    INTEGER, PARAMETER :: N = 20
-    INTEGER, PARAMETER :: chains = 1
+    INTEGER, PARAMETER :: N = 25
+    INTEGER, PARAMETER :: chains = 10000
 	INTEGER, PARAMETER :: neut = 60
 	INTEGER, PARAMETER :: gama = 199
-	 REAL, PARAMETER :: chain = 1
+	 REAL, PARAMETER :: chain = 10000
 
 	INTEGER, PARAMETER :: batch = chains/100
 
@@ -68,7 +68,7 @@ PROGRAM Png
 
 	enddo
 
-	tf = 20
+	tf = 50
 	t0 = 0
 
 	dt = (tf-t0)/N
@@ -107,7 +107,8 @@ PROGRAM Png
 
 			do k = 1, N+1
 
-				do l = 1+100*(i-1), 100*i
+				!do l = 1+100*(i-1), 100*i
+				do l = 1+batch*(i-1), batch*i
 
 					if ( PnData(l,k) .eq. (j-1) ) then
 
@@ -123,7 +124,7 @@ PROGRAM Png
 
 		do p = 1, neut
 
-			write(3,*) Pn(p,:,i)/100
+			write(3,*) Pn(p,:,i)/real(batch)
 
 		enddo 
 
@@ -173,8 +174,6 @@ PROGRAM Png
 
 	close(unit = 120)
 
-
-
 	open( unit = 5, file = 'PgMmnt0.txt' )
 
 	do i = 1, batch
@@ -183,7 +182,8 @@ PROGRAM Png
 
 			do k = 1, N+1
 
-				do l = 1+100*(i-1), 100*i
+				!do l = 1+100*(i-1), 100*i
+				do l = 1+batch*(i-1), batch*i
 
 					if ( PgData(l,k) .eq. (j-1) ) then
 
@@ -199,7 +199,7 @@ PROGRAM Png
 
 		do p = 1, gama
 
-			write(5,*) Pg(p,:,i)/100
+			write(5,*) Pg(p,:,i)/real(batch)
 
 		enddo 
 
@@ -219,9 +219,9 @@ PROGRAM Png
 
 	do i = 1, mmnt+1
 
-		do k = 1, batch
+		do j = 1, gama
 
-			do j = 1, gama
+			do k = 1, batch
 
 				PgMmntMatrix(k,:,i,j) = PgMmntData(j+gama*(k-1),:)*(j-1)**(i-1)
 
@@ -272,7 +272,7 @@ PROGRAM Png
 
 			enddo
 
-			PnMeans(i,:,k) = PnMeans(i,:,k)/batch
+			PnMeans(i,:,k) = PnMeans(i,:,k)/real(batch)
 
 		enddo
 
@@ -312,7 +312,7 @@ PROGRAM Png
 
 			enddo
 
-			PgMeans(i,:,k) = PgMeans(i,:,k)/batch
+			PgMeans(i,:,k) = PgMeans(i,:,k)/real(batch)
 
 		enddo
 		
@@ -360,7 +360,9 @@ PROGRAM Png
 
 			enddo
 			
-			vargama(i,:,k) = (1/sqrt(real(batch)))*sqrt(vargama(i,:,k))!/real(batch))
+			!vargama(i,:,k) = (1/sqrt(real(batch)))*sqrt(vargama(i,:,k))!/real(batch))
+			vargama(i,:,k) = vargama(i,:,k)/(real(batch)-1)
+			vargama(i,:,k) = 2*sqrt(vargama(i,:,k))/sqrt(real(batch))
 
 		enddo
 
@@ -430,6 +432,6 @@ PROGRAM Png
 
 	enddo	
 
-	print *, batch
+	!print *, batch
 
 END PROGRAM Png
