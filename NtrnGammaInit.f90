@@ -115,7 +115,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 10000
+	integer, parameter :: loop = 1000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -133,6 +133,10 @@ MODULE prob_flags
 
 END MODULE prob_flags
 
+MODULE init_variables
+
+END MODULE init_variables
+
 PROGRAM neutrongammachain
 
 	use mcnp_random
@@ -141,6 +145,8 @@ PROGRAM neutrongammachain
 	use time_params
 	use prob_flags
 	use omp_lib
+
+	IMPLICIT NONE
 
 	real(R8) :: rnmN, rnmG, rnmLeakNtrn
 	real(R8), dimension(loop) :: rnmSp, rnmSpNu, rnmSpMu
@@ -173,10 +179,20 @@ PROGRAM neutrongammachain
 
 	real(R8), dimension(neut*statint,N+1) :: PnAvg = 0 
 	real(R8), dimension(neut,N+1,mmt+1) :: PnAvgMmt = 0
+	real(R8), dimension(gamma*statint,N+1) :: PgAvg = 0
+	real(R8), dimension(gamma,N+1,mmt+1) :: PgAvgMmt = 0
 
 	real(R8), dimension(neut,N+1,mmt+1) :: neutvariance = 0
 	real(R8), dimension(neut,N+1,mmt+1) :: neutstd = 0
 	real(R8), dimension(neut,2*(N+1),mmt+1) :: PnStd = 0
+	real(R8), dimension(gamma,N+1,mmt+1) :: gammavariance = 0
+	real(R8), dimension(gamma,N+1,mmt+1) :: gammastd = 0
+	real(R8), dimension(gamma,2*(N+1),mmt+1) :: PgStd = 0
+
+	CHARACTER(LEN = 6), DIMENSION(mmt+1) :: fid = 'PnMmnt'
+	CHARACTER(LEN = 6), DIMENSION(mmt+1) :: fidg = 'PgMmnt'
+	CHARACTER(LEN = 25), DIMENSION(mmt+1) :: filenameneut, filenamegamma
+	CHARACTER(LEN = 1) :: filenum
 
 	call datalens(ntrnl, gammal, spntl, spntgl)
 
@@ -202,6 +218,15 @@ PROGRAM neutrongammachain
 
 	t0(:) = 0
 	tsp(:) = 0
+
+	do i = 1,mmt+1
+
+		write(filenum,'(i1)') i-1
+		filenameneut(i) = fid(i)//filenum//'.mmnt'
+		filenamegamma(i) = fidg(i)//filenum//'.mmnt'
+		print *, filenameneut(i)
+
+	enddo
 
 	call CumDistFcnGen(ntrnl, gammal, spntl, spntgl, CumNu, CumMu, CumSpontNu, CumSpontMu, NuBar, MuBar, SpontNuBar, SpontMuBar )
 
@@ -417,36 +442,6 @@ PROGRAM neutrongammachain
 
 		enddo
 
-		!Creation of Pn0 and Pg0 average
-
-		!do l = 1, neut
-
-		!	do m = 1, N+1
-
-		!		if ( ntrntal(k,m) .eq. ( l - 1 ) ) then
-
-		!			Pn(l,m,:) = Pn(l,m,:) + 1
-
-		!		endif
-
-		!	enddo
-
-		!enddo
-
-		!do l = 1, gamma
-
-		!	do m = 1, N+1
-
-		!		if ( gammatal(k,m) .eq. ( l - 1 ) ) then
-
-		!			Pg(l,m) = Pg(l,m) + 1
-
-		!		endif
-				
-		!	enddo
-			
-		!enddo					
-
 	enddo
 	!$OMP END PARALLEL DO
 
@@ -468,7 +463,7 @@ PROGRAM neutrongammachain
 
 					if ( ntrntal(j,l) .eq. (k - 1) ) then
 
-					Pn(k,l) = Pn(k,l) + 1
+						Pn(k,l) = Pn(k,l) + 1
 
 					endif
 
@@ -491,6 +486,39 @@ PROGRAM neutrongammachain
 
 	close(13)
 
+	do i = 1, statint
+
+		do j = 1+(i-1)*batch, i*batch
+
+			do k = 1, gamma
+
+				do l = 1, N + 1
+
+					if ( gammatal(j,l) .eq. ( k - 1 ) ) then
+
+						Pg(k,l) = Pg(k,l) + 1
+
+					endif
+					
+				enddo
+				
+			enddo
+		
+		enddo
+
+		do m = 1, gamma
+
+			Pg(m,:) = Pg(m,:)/batch
+			write( 14, * ) Pg(m,:)
+
+		enddo
+		
+		Pg(:,:) = 0
+
+	enddo
+
+	close(14)		
+
 	open( unit = 13, file = 'PnAvg0.txt')
 
 	do i = 1, statint*neut
@@ -499,11 +527,21 @@ PROGRAM neutrongammachain
 
 	enddo
 
-	m = 0
+	close(13)
+
+	open( unit = 14, file = 'PgAvg0.txt')
+
+	do i = 1, gamma*statint
+
+		read( unit = 14, FMT = * ) PgAvg(i,:)
+
+	enddo
+	
+	close(14)	
 
 	do k = 1, neut
 
-		do j = k, statint*neut, 60
+		do j = k, statint*neut, neut
 
 			write(15,*) PnAvg(j,:)
 
@@ -513,7 +551,19 @@ PROGRAM neutrongammachain
 
 	close(15)
 
-	open( unit = 15, file = 'PnOrder.txt')
+	do k = 1, gamma
+
+		do j = k, statint*gamma, gamma
+
+			write(16,*) PgAvg(j,:)
+
+		enddo
+		
+	enddo
+	
+	close(16)		
+
+	open( unit = 15, file = 'PnOrder.txt' )
 
 	do i = 1, statint*neut
 
@@ -522,6 +572,16 @@ PROGRAM neutrongammachain
 	enddo
 
 	close(15)
+
+	open( unit = 16, file = 'PgOrder.txt' )
+
+	do i = 1, statint*gamma
+
+		read( unit = 16, FMT = * ) PgAvg(i,:)
+
+	enddo
+	
+	close(16)	
 	
 	do i = 1, mmt + 1
 
@@ -539,6 +599,20 @@ PROGRAM neutrongammachain
 
 	do i = 1, mmt + 1
 
+		do j = 1, gamma
+
+			do k = 1+(j-1)*statint,statint*j
+
+				PgMmnt(k,:,i) = PgAvg(k,:)*(j-1)**(i-1)
+
+			enddo
+			
+		enddo
+		
+	enddo			
+
+	do i = 1, mmt + 1
+
 		do j = 1, neut
 
 			do k = 1+(j-1)*statint, statint*j
@@ -553,13 +627,29 @@ PROGRAM neutrongammachain
 
 	enddo
 
-	open( unit = 16, file = 'PnMmnts.txt')
+	open( unit = 17, file = 'PnMmnts.txt')
+
+	do i = 1, mmt + 1
+
+		do j = 1, gamma
+
+			do k = 1+(j-1)*statint, statint*j
+
+				PgAvgMmt(j,:,i) = PgAvgMmt(j,:,i) + PgMmnt(k,:,i)
+
+			enddo
+			
+			PgAvgMmt(j,:,i) = PgAvgMmt(j,:,i)/statint
+
+		enddo
+		
+	enddo			
 
 	do i = 1, mmt + 1
 
 		do j = 1, statint*neut
 
-			!write(16,*) PnMmnt(j,:,i)
+			!write(17,*) PnMmnt(j,:,i)
 
 		enddo
 		
@@ -581,10 +671,28 @@ PROGRAM neutrongammachain
 		
 	enddo
 
+	do i = 1, mmt + 1
+
+		do j = 1, gamma
+
+			do k = 1+(j-1)*statint, statint*j
+
+				gammavariance(j,:,i) = gammavariance(j,:,i) + ( PgMmnt(k,:,i) - PgAvgMmt(j,:,i) )**2.0
+
+			enddo
+			
+		enddo
+		
+	enddo			
+
 	neutvariance(:,:,:) = neutvariance(:,:,:)/real(statint)
-	neutvariance(:,:,:) = neutvariance(:,:,:)/(real(statint-1)) 
+	neutvariance(:,:,:) = neutvariance(:,:,:)/(real(statint-1))
+
+	gammavariance(:,:,:) = gammavariance(:,:,:)/real(statint)
+	gammavariance(:,:,:) = gammavariance(:,:,:)/real(statint-1)
 
 	neutstd(:,:,:) = sqrt(neutvariance(:,:,:)) 
+	gammastd(:,:,:) = sqrt(gammavariance(:,:,:))
 
 	do i = 1, mmt + 1
 
@@ -601,67 +709,50 @@ PROGRAM neutrongammachain
 		
 	enddo
 	
-	open( unit = 50, file = 'PnMmntTestFinal10000.txt' )
+	!open( unit = 50, file = 'PnMmntTestFinal10000.txt' )
 
-	do i = 1, neut
+	do i = 1, mmt + 1
 
-		write(50,*) PnStd(i,:,2)
+		do j = 1, gamma
+
+			do k = 1, N + 1
+
+				PgStd(j,2*k-1,i) = PgAvgMmt(j,k,i)
+				PgStd(j,2*k,i) = gammastd(j,k,i)
+
+			enddo
+			
+		enddo
+		
+	enddo			
+
+	do i = 1, mmt + 1
+
+		open (unit = 50 + k, file = filenameneut(i) )
+
+		do j = 1, neut
+
+			write( 50 + k,* ) PnStd(j,:,i)
+
+		enddo
+		
+		close( 50 + k )	
+
+	enddo
+
+	do i = 1, mmt + 1
+
+		open( unit = 60 + k, file = filenamegamma(i) )
+
+		do j = 1, gamma
+
+			write( 60 + k, * ) PgStd(j,:,i)
+
+		enddo
+		
+		close( 60 + k )	
 
 	enddo	
-
-
-	!!! So far, so good with neutrons, need to implement photon statistics
-
-	!print *, "Neutron P0 Variance: ", neutvariance(1,:,1)/
-
-	!do i = 1, mmt + 1
-
-	!	do j = 1, neut
-
-	!		PnMmnt(j,:,i) = Pn(j,:)*(j-1)**(i-1)
-
-	!	enddo
-
-	!enddo
-
-	!do i = 1, mmt + 1
-
-	!	do j = 1, gamma
-
-	!		PgMmnt(j,:,i) = Pg(j,:)*(j-1)**(i-1)
-
-	!	enddo
-
-	!enddo	
-
-	!do k = 1, loop
-
-	!	write( 7, * ) ntrntal(k,:)
-	!	write( 8, * ) gammatal(k,:)
-
-	!enddo
-
-	
-
-	!do i = 1, mmt+1
-
-	!	do k = 1, neut
-
-	!		write(13,*) PnMmnt(k,:,i)
-
-	!	enddo
-
-	!enddo
-
-	!do i = 1, mmt+1
-
-	!	do k = 1, gamma
-
-	!		write(14,*) PgMmnt(k,:,i)
-
-	!	enddo
-
-	!enddo	
 
 END PROGRAM neutrongammachain
 
