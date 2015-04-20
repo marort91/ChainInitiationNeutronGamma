@@ -456,6 +456,7 @@ PROGRAM neutrongammachain
 	open( unit = 13, file = 'PnAvg0.txt' )
 	open( unit = 15, file = 'PnOrder.txt')
 	open( unit = 14, file = 'PgAvg0.txt' )
+	open( unit = 16, file = 'PgOrder.txt')
 
 	do i = 1, statint
 
@@ -604,7 +605,7 @@ PROGRAM neutrongammachain
 
 	do i = 1, neut
 
-		write(50,*) PnStd(i,:,1)
+		write(50,*) PnStd(i,:,2)
 
 	enddo	
 
