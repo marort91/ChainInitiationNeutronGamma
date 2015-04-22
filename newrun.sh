@@ -3,11 +3,13 @@
 clear
 
 rm *.txt
+rm fort.*
+rm SpontNu
 #rm ntrnlifedata
 
 # Problem Information (Fission, Parasitic Absorption, Leakage)
-chains=10000
-lfission=0.01
+chains=50000
+lfission=1.0
 Pleakage=0.0
 
 sed -i.bak "118s/.*/	integer, parameter :: loop = $chains/" NtrnGammaInit.f90
@@ -16,20 +18,23 @@ sed -i.bak "103s/.*/	real, parameter :: ntrnPleakage = $Pleakage/" NtrnGammaInit
 
 #Spontaneous fission source or neutron present initial condition flag
 #If ICNtrnFlag = 0, N(0) = 0, else N(0) = 1
-ICNtrnFlag=0
-sed -i.bak "127s/.*/	integer, parameter :: ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
+ICNtrnFlag=1
+sed -i.bak "129s/.*/	integer, parameter :: ICNtrnFlag = $ICNtrnFlag/" NtrnGammaInit.f90
 
 fissflag=1
-sed -i.bak "128s/.*/	integer, parameter :: fissflag = $fissflag/" NtrnGammaInit.f90
+sed -i.bak "130s/.*/	integer, parameter :: fissflag = $fissflag/" NtrnGammaInit.f90
 
 branchlens=1000
 
-sed -i.bak "152s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
-#sed -i.bak "7s/.*/	INTEGER, PARAMETER :: ntrnlens = $branchlens/" ntrngammadataread.f90
+sed -i.bak "160s/.*/	integer, parameter :: branchlens = $branchlens/" NtrnGammaInit.f90
 
-timeint=25
+timeint=20
 
 sed -i.bak "119s/.*/	integer, parameter :: N = $timeint/" NtrnGammaInit.f90
+
+binaryfission=0
+
+sed -i.bak "133s/.*/	integer, parameter :: binaryfissionflag = $binaryfission/" NtrnGammaInit.f90
 
 if [ $fissflag = 1 ]; then
 
@@ -42,18 +47,6 @@ else
 fi	
 
 time ./NtrnGammaInit.out
-
-#sed -i.bak "8s/.*/    INTEGER, PARAMETER :: N = $timeint/" Png.f90
-#sed -i.bak "9s/.*/    INTEGER, PARAMETER :: chains = $chains/" Png.f90
-#sed -i.bak "12s/.*/	REAL, PARAMETER :: chain = $chains/" PngTest.f90
-
-sed -i.bak "8s/.*/    INTEGER, PARAMETER :: N = $timeint/" PngTest.f90
-sed -i.bak "9s/.*/    INTEGER, PARAMETER :: chains = $chains/" PngTest.f90
-sed -i.bak "12s/.*/	 REAL, PARAMETER :: chain = $chains/" PngTest.f90
-
-#gfortran -o PNG.out Png.f90
-gfortran -o PNG.out PngTest.f90
-./PNG.out
 
 rm *.mod
 rm *.bak

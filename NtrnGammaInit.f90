@@ -94,7 +94,7 @@ END MODULE mcnp_params
 	
 MODULE mat_params
 
-	real, parameter :: ntrnlfission = 0.0
+	real, parameter :: ntrnlfission = 1.0
     real, parameter :: ntrnlcapture = 1.0 - ntrnlfission
     real, parameter :: ntrnltot = ntrnlfission + ntrnlcapture
 
@@ -115,7 +115,7 @@ END MODULE mat_params
 
 MODULE time_params
 
-	integer, parameter :: loop = 1000
+	integer, parameter :: loop = 50000
 	integer, parameter :: N = 20
 	real, parameter :: ti = 0, tf = 20, dt = ( tf - ti ) / N 
 	real, dimension(N+1) :: time
@@ -127,9 +127,10 @@ END MODULE time_params
 MODULE prob_flags
 
 	integer, parameter :: ICNtrnFlag = 1
-	integer, parameter :: fissflag = 0
+	integer, parameter :: fissflag = 1
 	integer, parameter :: spontmuflag = 0
-	integer, parameter :: expvaloutcome = 0 
+	integer, parameter :: expvaloutcome = 0
+	integer, parameter :: binaryfissionflag = 0
 
 END MODULE prob_flags
 
@@ -274,6 +275,8 @@ PROGRAM neutrongammachain
 		gidx(:) = 0
 
 	endif
+
+	open( unit = 70, file = 'SpontNu' )
 	
 	!$OMP PARALLEL DO
 	do k = 1, loop
@@ -303,6 +306,8 @@ PROGRAM neutrongammachain
 
 			rnmSpNu(k) = rang()
 			spNu(k) = SpontNu(spntl,CumSpontNu,rnmSpNu(k),SpontNuBar)
+
+			write(70,*) spNu(k)
 
 			ntrntime(1,1,nidx(k)+1:nidx(k)+spNu(k),k) = tsp(k)
 		
@@ -444,6 +449,8 @@ PROGRAM neutrongammachain
 
 	enddo
 	!$OMP END PARALLEL DO
+
+	close(70)
 
 	!Pn(:,:) = Pn(:,:)/loop
 	!Pg(:,:) = Pg(:,:)/loop
@@ -956,6 +963,8 @@ SUBROUTINE CumDistFcnGen( nlines, glines, spntlines, spntglines, CumNu, CumMu, C
 
 	enddo
 
+	print *, CumNu
+
 	do i = 1, glines
 
 		CumMu(i) = sumg + ProbMu(i)
@@ -988,33 +997,58 @@ FUNCTION NtrnMult(N,CumNu,rnm,NuBar)
 
 	IMPLICIT NONE
 
-	integer(I8) :: N, NtrnMult, i
+	integer(I8) :: N, NtrnMult, NuBarFloor, NuBarCeil, i
 	real(R8), dimension(N) :: CumNu
-	real(R8) :: rnm, NuBar
+	real(R8) :: rnm, NuBar, PNuBar
 
-	do i=1,N
+	if ( binaryfissionflag .eq. 1 ) then
 
-		if ( rnm .lt. CumNu(1) ) then
+		NtrnMult = 2
 
-			NtrnMult = 0
+	elseif (expvaloutcome .eq. 1 ) then
 
-		else if ( ( rnm .gt. CumNu(i) ) .and. ( rnm .le. CumNu(i+1) ) ) then
+		NuBarFloor = floor(NuBar)
+		NuBarCeil = ceiling(NuBar)
 
-			NtrnMult = i 
+		!print *, abs(NuBar - NuBarFloor), abs(NuBarCeil - NuBar)
 
-		else if ( rnm .gt. CumNu(N) ) then 
+		PNuBar = NuBar - NuBarFloor
 
-			NtrnMult = N - 1
+		if ( rnm .gt. PNuBar ) then
+
+			NtrnMult = NuBarFloor
 
 		else
 
-			continue
+			NtrnMult = NuBarCeil
 
-		endif
+		endif	
 
-	enddo
+	else	
 
-	NtrnMult = 2
+		do i=1,N
+
+			if ( rnm .lt. CumNu(1) ) then
+
+				NtrnMult = 0
+
+			else if ( ( rnm .gt. CumNu(i) ) .and. ( rnm .le. CumNu(i+1) ) ) then
+
+				NtrnMult = i
+
+			!else if ( rnm .gt. CumNu(N-1) ) then 
+
+			!	NtrnMult = N - 1
+
+			else
+
+				continue
+
+			endif
+
+		enddo
+
+	endif
 
 END FUNCTION NtrnMult
 
@@ -1092,11 +1126,12 @@ FUNCTION SpontNu(S,CumSpontNu,rnm,SpontNuBar)
 
 	enddo
 
-	SpontNu = 1
+	!SpontNu = 1
 
-	open( unit = 16, file = 'SpontNuEmit.txt' )
+	!open( unit = 16, file = 'SpontNuEmit.txt' )
 
-	write(16,*) SpontNu
+	!write(16,*) SpontNu
+
 
 END FUNCTION SpontNu
 
